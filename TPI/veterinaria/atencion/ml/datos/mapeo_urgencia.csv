@@ -1,0 +1,49 @@
+enfermedad,nombre_es,nivel_urgencia,justificacion
+Canine Parvovirus,Parvovirus canino,CRITICA,Deshidratacion severa y alta mortalidad sin tratamiento inmediato
+Parvovirus,Parvovirus canino,CRITICA,Deshidratacion severa y alta mortalidad sin tratamiento inmediato
+Canine Distemper,Moquillo canino,CRITICA,Enfermedad sistemica con compromiso neurologico y alta mortalidad
+Distemper,Moquillo canino,CRITICA,Enfermedad sistemica con compromiso neurologico y alta mortalidad
+Feline Panleukopenia,Panleucopenia felina,CRITICA,Equivalente felino del parvovirus; mortalidad muy alta
+Panleukopenia,Panleucopenia felina,CRITICA,Equivalente felino del parvovirus; mortalidad muy alta
+Feline Panleukopenia Virus,Panleucopenia felina,CRITICA,Equivalente felino del parvovirus; mortalidad muy alta
+Canine Leptospirosis,Leptospirosis,CRITICA,Falla renal y hepatica aguda; zoonosis
+Leptospirosis,Leptospirosis,CRITICA,Falla renal y hepatica aguda; zoonosis
+Feline Infectious Peritonitis,Peritonitis infecciosa felina (PIF),CRITICA,Progresion rapida y pronostico reservado
+Pancreatitis,Pancreatitis,ALTA,Dolor abdominal intenso; puede complicarse rapidamente
+Canine Hepatitis,Hepatitis infecciosa canina,ALTA,Compromiso hepatico; requiere atencion en el dia
+Canine Infectious Hepatitis,Hepatitis infecciosa canina,ALTA,Compromiso hepatico; requiere atencion en el dia
+Heartworm Disease,Dirofilariasis (gusano del corazon),ALTA,Compromiso cardiopulmonar
+Canine Heartworm Disease,Dirofilariasis (gusano del corazon),ALTA,Compromiso cardiopulmonar
+Feline Leukemia Virus,Leucemia felina (FeLV),ALTA,Inmunosupresion severa
+Feline Leukemia,Leucemia felina (FeLV),ALTA,Inmunosupresion severa
+Feline Asthma,Asma felina,ALTA,Riesgo de crisis respiratoria
+Feline Renal Disease,Enfermedad renal felina,ALTA,Puede descompensarse; requiere control pronto
+Gastroenteritis,Gastroenteritis,MEDIA,Vigilar hidratacion; turno en 24-48 h
+Kennel Cough,Tos de las perreras,MEDIA,Infeccion respiratoria generalmente autolimitada
+Canine Cough,Tos de las perreras,MEDIA,Infeccion respiratoria generalmente autolimitada
+Bordetella Infection,Tos de las perreras (Bordetella),MEDIA,Infeccion respiratoria generalmente autolimitada
+Canine Flu,Influenza canina,MEDIA,Respiratoria; vigilar evolucion
+Canine Influenza,Influenza canina,MEDIA,Respiratoria; vigilar evolucion
+Chronic Bronchitis,Bronquitis cronica,MEDIA,Cronica; control programado
+Feline Calicivirus,Calicivirus felino,MEDIA,Complejo respiratorio felino
+Feline Herpesvirus,Herpesvirus felino,MEDIA,Complejo respiratorio felino
+Feline Rhinotracheitis,Rinotraqueitis felina,MEDIA,Complejo respiratorio felino
+Feline Viral Rhinotracheitis,Rinotraqueitis felina,MEDIA,Complejo respiratorio felino
+Feline Upper Respiratory Infection,Infeccion respiratoria alta felina,MEDIA,Complejo respiratorio felino
+Upper Respiratory Infection,Infeccion respiratoria alta,MEDIA,Complejo respiratorio felino
+Feline Respiratory Disease Complex,Complejo respiratorio felino,MEDIA,Complejo respiratorio felino
+Feline Respiratory Infection,Infeccion respiratoria felina,MEDIA,Complejo respiratorio felino
+Feline Chlamydiosis,Clamidiosis felina,MEDIA,Conjuntivitis/respiratoria; tratamiento antibiotico
+Feline Chlamydia,Clamidiosis felina,MEDIA,Conjuntivitis/respiratoria; tratamiento antibiotico
+Feline Coronavirus,Coronavirus felino,MEDIA,Generalmente leve; vigilar evolucion a PIF
+Feline Immunodeficiency Virus,Inmunodeficiencia felina (FIV),MEDIA,Cronica; control programado
+Lyme Disease,Enfermedad de Lyme,MEDIA,Transmitida por garrapatas; tratamiento antibiotico
+Tick-Borne Disease,Enfermedad transmitida por garrapatas,MEDIA,Tratamiento antibiotico; vigilar
+Hyperthyroidism,Hipertiroidismo,MEDIA,Cronica; control programado
+Inflammatory Bowel Disease,Enfermedad inflamatoria intestinal,MEDIA,Cronica; control programado
+Intestinal Parasites,Parasitos intestinales,BAJA,Tratamiento antiparasitario ambulatorio
+Fungal Infection,Infeccion fungica,BAJA,Dermatologica; tratamiento ambulatorio
+Ringworm,Tina (dermatofitosis),BAJA,Dermatologica; tratamiento ambulatorio
+Conjunctivitis,Conjuntivitis,BAJA,Tratamiento topico ambulatorio
+Allergic Rhinitis,Rinitis alergica,BAJA,Leve; control programado
+Arthritis,Artritis,BAJA,Cronica; control programado
