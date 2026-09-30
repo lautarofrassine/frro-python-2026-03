@@ -1,0 +1,58 @@
+{% extends "atencion/base.html" %}
+
+{% block titulo %}Resultado del triage{% endblock %}
+
+{% block contenido %}
+<div class="card shadow-sm">
+    <div class="card-body text-center">
+
+        {% if resultado.nivel == 'BAJA' %}
+            <div class="alert alert-success">
+        {% elif resultado.nivel == 'MEDIA' %}
+            <div class="alert alert-warning">
+        {% elif resultado.nivel == 'ALTA' %}
+            <div class="alert alert-alta">
+        {% else %}
+            <div class="alert alert-danger">
+        {% endif %}
+                <h2 class="alert-heading">
+                    Nivel de urgencia: {{ resultado.nivel }}
+                </h2>
+                <p class="mb-0">
+                    {% if resultado.nivel == 'BAJA' %}
+                        Podés solicitar un turno programado cuando te
+                        resulte cómodo.
+                    {% elif resultado.nivel == 'MEDIA' %}
+                        Te recomendamos solicitar un turno en los
+                        próximos días.
+                    {% elif resultado.nivel == 'ALTA' %}
+                        Te recomendamos acudir a la clínica lo antes
+                        posible.
+                    {% else %}
+                        Acuda a la clínica de inmediato.
+                    {% endif %}
+                </p>
+            </div>
+
+        {% if resultado.regla_aplicada %}
+            <div class="alert alert-info text-start">
+                <strong>Nivel ajustado por regla de seguridad:</strong>
+                {{ resultado.regla_aplicada }}
+                <br>
+                El modelo había sugerido inicialmente:
+                <strong>{{ resultado.nivel_modelo }}</strong>.
+            </div>
+        {% endif %}
+
+        <p class="text-muted small">
+            Esta es una orientación automática y no reemplaza la
+            evaluación de un veterinario. Ante cualquier duda o signo
+            de gravedad, consultá igualmente a la clínica.
+        </p>
+
+        <a href="{% url 'atencion:triage' %}" class="btn btn-outline-primary">
+            Volver a empezar
+        </a>
+    </div>
+</div>
+{% endblock %}

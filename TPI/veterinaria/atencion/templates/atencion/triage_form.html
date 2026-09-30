@@ -1,0 +1,92 @@
+{% extends "atencion/base.html" %}
+
+{% block titulo %}Triage automático{% endblock %}
+
+{% block contenido %}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h1 class="card-title h4 mb-2">Triage automático</h1>
+        <p class="text-muted">
+            Contestá estas preguntas sobre tu mascota para saber con qué
+            urgencia conviene pedir el turno. Esto es una orientación
+            automática y <strong>no reemplaza la evaluación de un
+            veterinario</strong>.
+        </p>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label for="{{ form.especie.id_for_label }}"
+                           class="form-label">
+                        {{ form.especie.label }}
+                    </label>
+                    {{ form.especie }}
+                    <div class="text-danger small">
+                        {{ form.especie.errors }}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label for="{{ form.edad.id_for_label }}"
+                           class="form-label">
+                        {{ form.edad.label }}
+                    </label>
+                    {{ form.edad }}
+                    <div class="text-danger small">
+                        {{ form.edad.errors }}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label for="{{ form.dias_evolucion.id_for_label }}"
+                           class="form-label">
+                        {{ form.dias_evolucion.label }}
+                    </label>
+                    {{ form.dias_evolucion }}
+                    <div class="text-danger small">
+                        {{ form.dias_evolucion.errors }}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label for="{{ form.temperatura.id_for_label }}"
+                           class="form-label">
+                        {{ form.temperatura.label }}
+                    </label>
+                    {{ form.temperatura }}
+                    <div class="text-danger small">
+                        {{ form.temperatura.errors }}
+                    </div>
+                </div>
+            </div>
+
+            <fieldset class="mb-4">
+                <legend class="h6">Síntomas</legend>
+                <div class="row row-cols-1 row-cols-md-2 g-2">
+                    {% for campo in form.sintomas %}
+                        <div class="col form-check">
+                            {{ campo }}
+                            <label class="form-check-label"
+                                   for="{{ campo.id_for_label }}">
+                                {{ campo.label }}
+                            </label>
+                            <div class="text-danger small">
+                                {{ campo.errors }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </fieldset>
+
+            <button type="submit" class="btn btn-primary">
+                Evaluar urgencia
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
