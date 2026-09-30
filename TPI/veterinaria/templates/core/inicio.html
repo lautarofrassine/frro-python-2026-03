@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% load static core_extras %}
+
+{% block titulo %}ClinicaVet24 - Clínica Veterinaria{% endblock %}
+
+{% block contenido %}
+
+<section class="hero py-5">
+    <div class="container py-4">
+        <div class="row align-items-center gy-5">
+            <div class="col-lg-6">
+                <h1 class="hero-titulo display-4 mb-3">
+                    Cuidado y cariño para tu
+                    <span class="texto-verde">mejor amigo</span>
+                </h1>
+                <p class="lead text-secondary mb-4">
+                    Atención veterinaria las 24 horas, con clasificación
+                    automática de la urgencia para que tu mascota reciba
+                    ayuda cuando más lo necesita.
+                </p>
+                <div class="d-flex flex-wrap gap-3 mb-5">
+                    <a href="{% url 'atencion:triage' %}"
+                       class="btn btn-brand btn-lg">
+                        Sacar turno
+                    </a>
+                    <a href="#contacto" class="btn btn-outline-brand btn-lg">
+                        Contactanos
+                    </a>
+                </div>
+
+                <div class="row row-cols-1 row-cols-sm-3 g-4">
+                    <div class="col d-flex gap-3 align-items-start">
+                        <span class="indicador-icono">
+                            <i class="bi bi-clock-history"></i>
+                        </span>
+                        <div>
+                            <div class="fw-bold">24/7</div>
+                            <div class="small text-secondary">
+                                Atención continua
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col d-flex gap-3 align-items-start">
+                        <span class="indicador-icono">
+                            <i class="bi bi-clipboard2-pulse"></i>
+                        </span>
+                        <div>
+                            <div class="fw-bold">Triage automático</div>
+                            <div class="small text-secondary">
+                                Según los síntomas
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col d-flex gap-3 align-items-start">
+                        <span class="indicador-icono">
+                            <i class="bi bi-calendar2-check"></i>
+                        </span>
+                        <div>
+                            <div class="fw-bold">Turno inmediato</div>
+                            <div class="small text-secondary">
+                                Asignación automática
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="hero-imagen-wrap">
+                    {% static_exists 'img/hero-perro.jpg' as hero_existe %}
+                    {% if hero_existe %}
+                        <img src="{% static 'img/hero-perro.jpg' %}"
+                             alt="Perro feliz en la clínica veterinaria">
+                    {% else %}
+                        <div class="hero-img-placeholder">
+                            <i class="bi bi-image"></i>
+                        </div>
+                    {% endif %}
+                    <div class="hero-tarjeta-flotante">
+                        <i class="bi bi-lightning-charge-fill text-warning me-1"></i>
+                        Urgencias sin espera
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="servicios" class="py-5">
+    <div class="container py-4">
+        <h2 class="text-center mb-2">Nuestros servicios</h2>
+        <p class="text-center text-secondary mb-5">
+            Todo lo que tu mascota necesita, en un solo lugar.
+        </p>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
+            <div class="col">
+                <div class="tarjeta-servicio p-4">
+                    <div class="icono-servicio mb-3">
+                        <i class="bi bi-clipboard2-heart"></i>
+                    </div>
+                    <h3 class="h5">Consultas</h3>
+                    <p class="text-secondary mb-0">
+                        Chequeos generales y seguimiento de la salud de
+                        tu mascota.
+                    </p>
+                </div>
+            </div>
+            <div class="col">
+                <div class="tarjeta-servicio p-4">
+                    <div class="icono-servicio mb-3">
+                        <i class="bi bi-shield-plus"></i>
+                    </div>
+                    <h3 class="h5">Vacunación</h3>
+                    <p class="text-secondary mb-0">
+                        Calendario de vacunas al día, con recordatorio de
+                        la próxima dosis.
+                    </p>
+                </div>
+            </div>
+            <div class="col">
+                <div class="tarjeta-servicio p-4">
+                    <div class="icono-servicio mb-3">
+                        <i class="bi bi-exclamation-octagon"></i>
+                    </div>
+                    <h3 class="h5">Urgencias 24 hs</h3>
+                    <p class="text-secondary mb-0">
+                        Atención de emergencias todos los días, a
+                        cualquier hora.
+                    </p>
+                </div>
+            </div>
+            <div class="col">
+                <div class="tarjeta-servicio p-4">
+                    <div class="icono-servicio mb-3">
+                        <i class="bi bi-file-earmark-medical"></i>
+                    </div>
+                    <h3 class="h5">Historia clínica</h3>
+                    <p class="text-secondary mb-0">
+                        Registro completo de diagnósticos, tratamientos
+                        y evolución.
+                    </p>
+                </div>
+            </div>
+            <div class="col">
+                <div class="tarjeta-servicio p-4">
+                    <div class="icono-servicio mb-3">
+                        <i class="bi bi-capsule"></i>
+                    </div>
+                    <h3 class="h5">Farmacia</h3>
+                    <p class="text-secondary mb-0">
+                        Medicamentos con stock controlado y receta
+                        cuando corresponde.
+                    </p>
+                </div>
+            </div>
+            <div class="col">
+                <div class="tarjeta-servicio p-4">
+                    <div class="icono-servicio mb-3">
+                        <i class="bi bi-scissors"></i>
+                    </div>
+                    <h3 class="h5">Cirugías</h3>
+                    <p class="text-secondary mb-0">
+                        Procedimientos quirúrgicos con seguimiento post
+                        operatorio.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="como-funciona" class="py-5 bg-light">
+    <div class="container py-4">
+        <h2 class="text-center mb-5">Cómo funciona</h2>
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            <div class="col text-center">
+                <div class="paso-numero mx-auto mb-3">1</div>
+                <h3 class="h5">Contanos los síntomas</h3>
+                <p class="text-secondary">
+                    Completá un formulario simple sobre lo que le pasa
+                    a tu mascota.
+                </p>
+            </div>
+            <div class="col text-center">
+                <div class="paso-numero mx-auto mb-3">2</div>
+                <h3 class="h5">Clasificamos la urgencia</h3>
+                <p class="text-secondary">
+                    Un modelo entrenado con casos reales determina el
+                    nivel de urgencia.
+                </p>
+            </div>
+            <div class="col text-center">
+                <div class="paso-numero mx-auto mb-3">3</div>
+                <h3 class="h5">Te asignamos turno y veterinario</h3>
+                <p class="text-secondary">
+                    Recibís un turno acorde a la urgencia, con el
+                    veterinario disponible.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="contacto" class="py-5">
+    <div class="container py-4">
+        <h2 class="text-center mb-5">Contacto</h2>
+        <div class="row row-cols-1 row-cols-sm-3 g-4 text-center">
+            <div class="col">
+                <i class="bi bi-geo-alt-fill fs-2 mb-2 d-block"
+                   style="color: var(--verde-principal);"></i>
+                <div class="fw-bold">Dirección</div>
+                <div class="text-secondary">
+                    Av. Siempre Viva 1234, Rosario, Santa Fe
+                </div>
+            </div>
+            <div class="col">
+                <i class="bi bi-telephone-fill fs-2 mb-2 d-block"
+                   style="color: var(--verde-principal);"></i>
+                <div class="fw-bold">Teléfono</div>
+                <div class="text-secondary">(0341) 555-0000</div>
+            </div>
+            <div class="col">
+                <i class="bi bi-clock-fill fs-2 mb-2 d-block"
+                   style="color: var(--verde-principal);"></i>
+                <div class="fw-bold">Horario</div>
+                <div class="text-secondary">Las 24 horas, todos los días</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

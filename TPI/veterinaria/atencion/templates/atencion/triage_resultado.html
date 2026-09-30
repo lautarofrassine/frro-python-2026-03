@@ -1,58 +1,83 @@
-{% extends "atencion/base.html" %}
+{% extends "base.html" %}
 
-{% block titulo %}Resultado del triage{% endblock %}
+{% block titulo %}Resultado del triage - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
 
 {% block contenido %}
-<div class="card shadow-sm">
-    <div class="card-body text-center">
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7">
 
-        {% if resultado.nivel == 'BAJA' %}
-            <div class="alert alert-success">
-        {% elif resultado.nivel == 'MEDIA' %}
-            <div class="alert alert-warning">
-        {% elif resultado.nivel == 'ALTA' %}
-            <div class="alert alert-alta">
-        {% else %}
-            <div class="alert alert-danger">
-        {% endif %}
-                <h2 class="alert-heading">
-                    Nivel de urgencia: {{ resultado.nivel }}
-                </h2>
-                <p class="mb-0">
-                    {% if resultado.nivel == 'BAJA' %}
-                        Podés solicitar un turno programado cuando te
-                        resulte cómodo.
-                    {% elif resultado.nivel == 'MEDIA' %}
-                        Te recomendamos solicitar un turno en los
-                        próximos días.
-                    {% elif resultado.nivel == 'ALTA' %}
-                        Te recomendamos acudir a la clínica lo antes
-                        posible.
-                    {% else %}
-                        Acuda a la clínica de inmediato.
-                    {% endif %}
+                {% if resultado.nivel == 'BAJA' %}
+                    <div class="card tarjeta-resultado-nivel bg-success
+                                bg-opacity-10 border border-success
+                                text-center p-4 p-md-5">
+                        <i class="bi bi-check-circle-fill icono-nivel
+                                  text-success mb-3"></i>
+                {% elif resultado.nivel == 'MEDIA' %}
+                    <div class="card tarjeta-resultado-nivel bg-warning
+                                bg-opacity-10 border border-warning
+                                text-center p-4 p-md-5">
+                        <i class="bi bi-exclamation-circle-fill icono-nivel
+                                  text-warning mb-3"></i>
+                {% elif resultado.nivel == 'ALTA' %}
+                    <div class="card tarjeta-resultado-nivel bg-alta
+                                text-center p-4 p-md-5">
+                        <i class="bi bi-exclamation-triangle-fill icono-nivel
+                                  mb-3" style="color: #fb923c;"></i>
+                {% else %}
+                    <div class="card tarjeta-resultado-nivel bg-danger
+                                bg-opacity-10 border border-danger
+                                text-center p-4 p-md-5">
+                        <i class="bi bi-exclamation-octagon-fill icono-nivel
+                                  text-danger mb-3"></i>
+                {% endif %}
+                    <h2 class="mb-2">
+                        Nivel de urgencia: {{ resultado.nivel }}
+                    </h2>
+                    <p class="fs-5 mb-0">
+                        {% if resultado.nivel == 'BAJA' %}
+                            Podés solicitar un turno programado cuando te
+                            resulte cómodo.
+                        {% elif resultado.nivel == 'MEDIA' %}
+                            Te recomendamos solicitar un turno en los
+                            próximos días.
+                        {% elif resultado.nivel == 'ALTA' %}
+                            Te recomendamos acudir a la clínica lo antes
+                            posible.
+                        {% else %}
+                            Acuda a la clínica de inmediato.
+                        {% endif %}
+                    </p>
+                </div>
+
+                {% if resultado.regla_aplicada %}
+                    <div class="alert alert-info mt-4">
+                        <i class="bi bi-info-circle-fill me-1"></i>
+                        <strong>Nivel ajustado por regla de seguridad:</strong>
+                        {{ resultado.regla_aplicada }}
+                        <br>
+                        El modelo había sugerido inicialmente:
+                        <strong>{{ resultado.nivel_modelo }}</strong>.
+                    </div>
+                {% endif %}
+
+                <p class="text-secondary small text-center mt-4">
+                    Esta es una orientación automática y no reemplaza la
+                    evaluación de un veterinario. Ante cualquier duda o
+                    signo de gravedad, consultá igualmente a la clínica.
                 </p>
+
+                <div class="text-center">
+                    <a href="{% url 'atencion:triage' %}"
+                       class="btn btn-outline-brand">
+                        Volver a empezar
+                    </a>
+                </div>
+
             </div>
-
-        {% if resultado.regla_aplicada %}
-            <div class="alert alert-info text-start">
-                <strong>Nivel ajustado por regla de seguridad:</strong>
-                {{ resultado.regla_aplicada }}
-                <br>
-                El modelo había sugerido inicialmente:
-                <strong>{{ resultado.nivel_modelo }}</strong>.
-            </div>
-        {% endif %}
-
-        <p class="text-muted small">
-            Esta es una orientación automática y no reemplaza la
-            evaluación de un veterinario. Ante cualquier duda o signo
-            de gravedad, consultá igualmente a la clínica.
-        </p>
-
-        <a href="{% url 'atencion:triage' %}" class="btn btn-outline-primary">
-            Volver a empezar
-        </a>
+        </div>
     </div>
-</div>
+</section>
 {% endblock %}

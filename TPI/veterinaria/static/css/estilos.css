@@ -1,0 +1,218 @@
+:root {
+    --verde-principal: #0f8a5f;
+    --verde-oscuro: #0b6b4a;
+    --fondo-hero: #f0faf5;
+    --texto-oscuro: #111827;
+}
+
+body {
+    font-family: 'Nunito', sans-serif;
+    color: var(--texto-oscuro);
+    background-color: #ffffff;
+}
+
+h1, h2, h3, h4, h5, h6,
+.navbar-brand, .btn-brand, .btn-outline-brand {
+    font-family: 'Poppins', sans-serif;
+}
+
+a {
+    color: var(--verde-principal);
+}
+
+/* ---------- Barra superior ---------- */
+.topbar {
+    background-color: var(--verde-oscuro);
+    color: #ffffff;
+}
+
+/* ---------- Navbar ---------- */
+.logo-circulo {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: 50%;
+    background-color: var(--verde-principal);
+    color: #ffffff;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-link {
+    font-weight: 600;
+    color: var(--texto-oscuro);
+}
+
+.nav-link:hover {
+    color: var(--verde-principal);
+}
+
+/* ---------- Botones de marca ---------- */
+.btn-brand {
+    background-color: var(--verde-principal);
+    border: 1px solid var(--verde-principal);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.btn-brand:hover {
+    background-color: var(--verde-oscuro);
+    border-color: var(--verde-oscuro);
+    color: #ffffff;
+}
+
+.btn-outline-brand {
+    background-color: transparent;
+    border: 1px solid var(--verde-principal);
+    color: var(--verde-principal);
+    font-weight: 600;
+}
+
+.btn-outline-brand:hover {
+    background-color: var(--verde-principal);
+    color: #ffffff;
+}
+
+/* ---------- Hero (inicio) ---------- */
+.hero {
+    background-color: var(--fondo-hero);
+}
+
+.hero-titulo {
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+.hero-titulo .texto-verde {
+    color: var(--verde-principal);
+}
+
+.hero-imagen-wrap {
+    position: relative;
+}
+
+.hero-imagen-wrap img,
+.hero-img-placeholder {
+    border-radius: 1.5rem;
+    width: 100%;
+    height: 380px;
+    object-fit: cover;
+}
+
+.hero-img-placeholder {
+    background: linear-gradient(135deg, var(--verde-principal), var(--verde-oscuro));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 3rem;
+}
+
+.hero-tarjeta-flotante {
+    position: absolute;
+    left: -1rem;
+    bottom: -1rem;
+    background-color: #ffffff;
+    border-radius: 1rem;
+    padding: 0.75rem 1.25rem;
+    box-shadow: 0 0.5rem 1.5rem rgba(17, 24, 39, 0.15);
+    font-weight: 700;
+    max-width: 220px;
+}
+
+@media (max-width: 991.98px) {
+    .hero-tarjeta-flotante {
+        left: 0.75rem;
+        bottom: 0.75rem;
+    }
+}
+
+.indicador-icono {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 50%;
+    background-color: rgba(15, 138, 95, 0.12);
+    color: var(--verde-principal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+/* ---------- Servicios ---------- */
+.tarjeta-servicio {
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    height: 100%;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.tarjeta-servicio:hover {
+    box-shadow: 0 0.75rem 1.5rem rgba(17, 24, 39, 0.08);
+    transform: translateY(-2px);
+}
+
+.tarjeta-servicio .icono-servicio {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: rgba(15, 138, 95, 0.12);
+    color: var(--verde-principal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+/* ---------- Como funciona ---------- */
+.paso-numero {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 50%;
+    background-color: var(--verde-principal);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ---------- Footer ---------- */
+.footer-clinica {
+    background-color: var(--verde-oscuro);
+    color: #ffffff;
+}
+
+/* ---------- Triage ---------- */
+.fondo-verde-claro {
+    background-color: var(--fondo-hero);
+}
+
+.tarjeta-triage {
+    border: none;
+    border-radius: 1.25rem;
+    box-shadow: 0 0.75rem 2rem rgba(17, 24, 39, 0.08);
+}
+
+.tarjeta-resultado-nivel {
+    border: none;
+    border-radius: 1.25rem;
+}
+
+.tarjeta-resultado-nivel .icono-nivel {
+    font-size: 3rem;
+}
+
+/* Bootstrap 5 no trae una variante "naranja" de alert/card por
+   defecto; se define aca para el nivel de urgencia ALTA. */
+.alert-alta,
+.bg-alta {
+    background-color: #ffedd5;
+    border-color: #fb923c;
+    color: #9a3412;
+}
