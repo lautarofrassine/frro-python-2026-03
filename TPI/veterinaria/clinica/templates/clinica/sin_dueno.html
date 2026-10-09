@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block titulo %}Mascotas - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7">
+                <div class="card tarjeta-triage">
+                    <div class="card-body p-4 p-md-5 text-center">
+                        <i class="bi bi-person-badge fs-1 text-success d-block mb-3"></i>
+                        <h1 class="h4">Sección solo para dueños</h1>
+                        <p class="text-secondary">
+                            Tu usuario es del personal de la clínica y no
+                            tiene mascotas propias. La gestión de mascotas
+                            de los clientes se hace desde la administración.
+                        </p>
+                        {% if user.is_staff %}
+                            <a href="{% url 'admin:index' %}" class="btn btn-brand">
+                                Ir a la administración
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

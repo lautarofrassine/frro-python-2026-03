@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load mascotas_extras %}
+
+{% block titulo %}Mis mascotas - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-center
+                    gap-3 mb-4">
+            <h1 class="h2 mb-0">
+                <i class="fa-solid fa-paw text-success me-2"></i>Mis mascotas
+            </h1>
+            {% if mascotas %}
+                <a href="{% url 'clinica:mascota_nueva' %}"
+                   class="btn btn-brand">
+                    <i class="bi bi-plus-lg me-1"></i>Agregar mascota
+                </a>
+            {% endif %}
+        </div>
+
+        {% if mascotas %}
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
+                {% for mascota in mascotas %}
+                    <div class="col">
+                        <div class="card tarjeta-mascota">
+                            <div class="card-body p-4 d-flex flex-column">
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    <span class="avatar-mascota">
+                                        <i class="fa-solid {{ mascota.especie|icono_especie }}"></i>
+                                    </span>
+                                    <div>
+                                        <h2 class="h5 mb-0">{{ mascota.nombre }}</h2>
+                                        <div class="dato-mascota">
+                                            {{ mascota.get_especie_display }}
+                                            · {{ mascota.raza }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-4 mb-4">
+                                    <div>
+                                        <div class="dato-mascota">Edad</div>
+                                        <div class="fw-semibold">{{ mascota|edad }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="dato-mascota">Peso</div>
+                                        <div class="fw-semibold">{{ mascota.peso_kg }} kg</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 mt-auto">
+                                    <a href="{% url 'clinica:mascota_editar' mascota.pk %}"
+                                       class="btn btn-outline-brand flex-fill">
+                                        <i class="bi bi-pencil me-1"></i>Editar
+                                    </a>
+                                    <a href="{% url 'clinica:mascota_baja' mascota.pk %}"
+                                       class="btn btn-outline-danger flex-fill">
+                                        <i class="bi bi-archive me-1"></i>Dar de baja
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="row justify-content-center">
+                <div class="col-lg-7">
+                    <div class="card tarjeta-triage">
+                        <div class="card-body p-5 text-center">
+                            <i class="fa-solid fa-paw estado-vacio-icono mb-3"></i>
+                            <h2 class="h4">Todavía no registraste mascotas</h2>
+                            <p class="text-secondary mb-4">
+                                Cargá los datos de tu perro o gato para
+                                sacar turnos más rápido y tener todo a mano.
+                            </p>
+                            <a href="{% url 'clinica:mascota_nueva' %}"
+                               class="btn btn-brand btn-lg">
+                                <i class="bi bi-plus-lg me-1"></i>
+                                Agregar mi primera mascota
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block titulo %}Dar de baja a {{ mascota.nombre }} - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card tarjeta-triage">
+                    <div class="card-body p-4 p-md-5 text-center">
+                        <i class="bi bi-archive text-danger fs-1 d-block mb-3"></i>
+                        <h1 class="h4">
+                            ¿Seguro que querés dar de baja a {{ mascota.nombre }}?
+                        </h1>
+                        <p class="text-secondary">
+                            Va a dejar de aparecer en tu lista de mascotas.
+                            Su información se conserva en la clínica.
+                        </p>
+                        <form method="post"
+                              class="d-flex flex-column flex-sm-row gap-2 justify-content-center mt-4">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                Sí, dar de baja
+                            </button>
+                            <a href="{% url 'clinica:mascotas' %}"
+                               class="btn btn-outline-secondary btn-lg">
+                                Cancelar
+                            </a>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

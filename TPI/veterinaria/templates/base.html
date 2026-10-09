@@ -18,6 +18,10 @@
     <link
         href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
         rel="stylesheet">
+    {# Font Awesome solo para perro/gato/huella: Bootstrap Icons no los trae. #}
+    <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        rel="stylesheet">
     <link href="{% static 'css/estilos.css' %}" rel="stylesheet">
 
     {% block extra_head %}{% endblock %}
@@ -93,6 +97,13 @@
                                        href="{% url 'clinica:panel' %}">
                                         <i class="bi bi-grid me-1"></i>
                                         Mi panel
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item"
+                                       href="{% url 'clinica:mascotas' %}">
+                                        <i class="fa-solid fa-paw me-1"></i>
+                                        Mis mascotas
                                     </a>
                                 </li>
                                 <li><hr class="dropdown-divider"></li>

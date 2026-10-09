@@ -11,3 +11,12 @@ class InicioViewTests(SimpleTestCase):
         self.assertTemplateUsed(response, 'core/inicio.html')
         self.assertContains(response, 'ClinicaVet24')
         self.assertContains(response, reverse('atencion:triage'))
+
+    def test_tarjeta_mascotas_reemplaza_a_cirugias(self):
+        response = self.client.get(reverse('core:inicio'))
+
+        self.assertContains(
+            response, 'Registrá a tus mascotas y mantené sus datos al día.',
+        )
+        self.assertContains(response, reverse('clinica:mascotas'))
+        self.assertNotContains(response, 'Cirugías')

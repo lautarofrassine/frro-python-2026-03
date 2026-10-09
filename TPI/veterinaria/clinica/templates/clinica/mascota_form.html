@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block titulo %}{% if mascota %}Editar a {{ mascota.nombre }}{% else %}Nueva mascota{% endif %} - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7">
+                <div class="card tarjeta-triage">
+                    <div class="card-body p-4 p-md-5">
+                        <h1 class="h3 mb-4">
+                            <i class="fa-solid fa-paw text-success me-2"></i>
+                            {% if mascota %}
+                                Editar a {{ mascota.nombre }}
+                            {% else %}
+                                Nueva mascota
+                            {% endif %}
+                        </h1>
+
+                        <form method="post" novalidate>
+                            {% csrf_token %}
+
+                            {% for error in form.non_field_errors %}
+                                <div class="alert alert-danger">{{ error }}</div>
+                            {% endfor %}
+
+                            {% include "includes/campo_form.html" with campo=form.nombre %}
+
+                            <div class="mb-3">
+                                <span class="form-label fw-semibold d-block">
+                                    {{ form.especie.label }}
+                                </span>
+                                <div class="d-flex gap-3 selector-especie">
+                                    {% for opcion in form.especie %}
+                                        <input type="radio" class="btn-check"
+                                               name="{{ opcion.data.name }}"
+                                               id="{{ opcion.id_for_label }}"
+                                               value="{{ opcion.data.value }}"
+                                               autocomplete="off"
+                                               {% if opcion.data.selected %}checked{% endif %}>
+                                        <label class="btn btn-outline-brand"
+                                               for="{{ opcion.id_for_label }}">
+                                            {% if opcion.data.value == 'PERRO' %}
+                                                <i class="fa-solid fa-dog me-2"></i>
+                                            {% else %}
+                                                <i class="fa-solid fa-cat me-2"></i>
+                                            {% endif %}
+                                            {{ opcion.choice_label }}
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                                {% for error in form.especie.errors %}
+                                    <div class="text-danger small mt-1">
+                                        <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            {% include "includes/campo_form.html" with campo=form.raza %}
+                            {% for especie, razas in form.razas_sugeridas.items %}
+                                <datalist id="razas-{{ especie|lower }}">
+                                    {% for raza in razas %}
+                                        <option value="{{ raza }}"></option>
+                                    {% endfor %}
+                                </datalist>
+                            {% endfor %}
+
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    {% include "includes/campo_form.html" with campo=form.fecha_nacimiento %}
+                                </div>
+                                <div class="col-sm-6">
+                                    {% include "includes/campo_form.html" with campo=form.peso_kg %}
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-column flex-sm-row gap-2 mt-2">
+                                <button type="submit"
+                                        class="btn btn-brand btn-lg flex-fill">
+                                    {% if mascota %}Guardar cambios{% else %}Registrar mascota{% endif %}
+                                </button>
+                                <a href="{% url 'clinica:mascotas' %}"
+                                   class="btn btn-outline-secondary btn-lg">
+                                    Cancelar
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    // Cambia las sugerencias de raza segun la especie elegida.
+    document.querySelectorAll('input[name="{{ form.especie.html_name }}"]')
+        .forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                document.getElementById('{{ form.raza.id_for_label }}')
+                    .setAttribute('list', 'razas-' + this.value.toLowerCase());
+            });
+        });
+</script>
+{% endblock %}

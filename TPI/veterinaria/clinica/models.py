@@ -31,8 +31,12 @@ class Dueno(models.Model):
 
 
 class Mascota(models.Model):
+    class Especie(models.TextChoices):
+        PERRO = 'PERRO', 'Perro'
+        GATO = 'GATO', 'Gato'
+
     nombre = models.CharField(max_length=100)
-    especie = models.CharField(max_length=50)
+    especie = models.CharField(max_length=10, choices=Especie.choices)
     raza = models.CharField(max_length=50)
     fecha_nacimiento = models.DateField()
     peso_kg = models.DecimalField(max_digits=5, decimal_places=2)
@@ -46,13 +50,17 @@ class Mascota(models.Model):
         through='AplicacionVacuna',
         related_name='mascotas',
     )
+    # Baja logica: las mascotas no se borran porque van a tener turnos,
+    # vacunas e historia clinica asociados.
+    activo = models.BooleanField(default=True)
+    fecha_alta = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = 'Mascota'
         verbose_name_plural = 'Mascotas'
 
     def __str__(self):
-        return f'{self.nombre} ({self.especie})'
+        return f'{self.nombre} ({self.get_especie_display()})'
 
 
 class Vacuna(models.Model):

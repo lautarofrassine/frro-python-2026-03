@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load mascotas_extras %}
 
 {% block titulo %}Mi panel - ClinicaVet24{% endblock %}
 {% block body_class %}fondo-verde-claro{% endblock %}
@@ -51,18 +52,50 @@
                 <div class="col-lg-7">
                     <div class="card tarjeta-triage h-100">
                         <div class="card-body p-4">
-                            <h2 class="h5 mb-3">
-                                <i class="bi bi-heart-pulse text-success me-2"></i>
-                                Mis mascotas
-                            </h2>
-                            <div class="text-center text-secondary py-4">
-                                <i class="bi bi-emoji-smile fs-1 d-block mb-2"></i>
-                                <p>Todavía no registraste mascotas.</p>
-                                <button type="button" class="btn btn-outline-brand"
-                                        disabled>
-                                    Próximamente
-                                </button>
+                            <div class="d-flex justify-content-between
+                                        align-items-center mb-3">
+                                <h2 class="h5 mb-0">
+                                    <i class="fa-solid fa-paw text-success me-2"></i>
+                                    Mis mascotas
+                                </h2>
+                                {% if mascotas %}
+                                    <a href="{% url 'clinica:mascotas' %}"
+                                       class="small fw-semibold">
+                                        Ver todas ({{ mascotas|length }})
+                                    </a>
+                                {% endif %}
                             </div>
+                            {% if mascotas %}
+                                <div class="row row-cols-1 row-cols-sm-2 g-3 mb-3">
+                                    {% for mascota in mascotas|slice:":4" %}
+                                        <div class="col">
+                                            <div class="d-flex align-items-center gap-2
+                                                        border rounded-4 p-2 h-100">
+                                                <span class="avatar-mascota chico">
+                                                    <i class="fa-solid {{ mascota.especie|icono_especie }}"></i>
+                                                </span>
+                                                <div class="lh-sm">
+                                                    <div class="fw-semibold">{{ mascota.nombre }}</div>
+                                                    <div class="dato-mascota">{{ mascota.raza }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                <a href="{% url 'clinica:mascota_nueva' %}"
+                                   class="btn btn-outline-brand">
+                                    <i class="bi bi-plus-lg me-1"></i>Agregar mascota
+                                </a>
+                            {% else %}
+                                <div class="text-center text-secondary py-4">
+                                    <i class="fa-solid fa-paw fs-1 d-block mb-2"></i>
+                                    <p>Todavía no registraste mascotas.</p>
+                                    <a href="{% url 'clinica:mascota_nueva' %}"
+                                       class="btn btn-brand">
+                                        <i class="bi bi-plus-lg me-1"></i>Agregar mascota
+                                    </a>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

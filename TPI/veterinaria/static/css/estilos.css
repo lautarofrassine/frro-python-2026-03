@@ -216,3 +216,57 @@ a {
     border-color: #fb923c;
     color: #9a3412;
 }
+
+/* ---------- Mascotas ---------- */
+.tarjeta-mascota {
+    border: none;
+    border-radius: 1.25rem;
+    box-shadow: 0 0.5rem 1.5rem rgba(17, 24, 39, 0.07);
+    height: 100%;
+}
+
+.avatar-mascota {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    border-radius: 50%;
+    background-color: rgba(15, 138, 95, 0.12);
+    color: var(--verde-principal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.avatar-mascota.chico {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    font-size: 1.1rem;
+}
+
+.dato-mascota {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+/* Selector de especie como dos botones grandes con icono. */
+.selector-especie .btn {
+    flex: 1 1 0;
+    padding: 0.9rem 1rem;
+    border-radius: 1rem;
+    font-size: 1.05rem;
+}
+
+.btn-check:checked + .btn-outline-brand,
+.btn-check:focus-visible + .btn-outline-brand {
+    background-color: var(--verde-principal);
+    border-color: var(--verde-principal);
+    color: #ffffff;
+}
+
+.estado-vacio-icono {
+    font-size: 3.5rem;
+    color: var(--verde-principal);
+    opacity: 0.8;
+}

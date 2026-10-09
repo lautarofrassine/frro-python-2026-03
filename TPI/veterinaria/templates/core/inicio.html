@@ -154,14 +154,19 @@
                 </div>
             </div>
             <div class="col">
-                <div class="tarjeta-servicio p-4">
+                {# login_required manda a ingresar con next=/cuenta/mascotas/ si no hay sesion. #}
+                <div class="tarjeta-servicio p-4 position-relative">
                     <div class="icono-servicio mb-3">
-                        <i class="bi bi-scissors"></i>
+                        <i class="fa-solid fa-paw"></i>
                     </div>
-                    <h3 class="h5">Cirugías</h3>
+                    <h3 class="h5">
+                        <a href="{% url 'clinica:mascotas' %}"
+                           class="stretched-link text-reset text-decoration-none">
+                            Mascotas
+                        </a>
+                    </h3>
                     <p class="text-secondary mb-0">
-                        Procedimientos quirúrgicos con seguimiento post
-                        operatorio.
+                        Registrá a tus mascotas y mantené sus datos al día.
                     </p>
                 </div>
             </div>

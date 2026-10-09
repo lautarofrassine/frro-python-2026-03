@@ -3,6 +3,7 @@ from django.contrib.auth.forms import AuthenticationForm, UsernameField
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 
+from clinica.services.mascotas import ESPECIES
 from clinica.services.usuarios import (
     MENSAJE_DNI_INVALIDO,
     MENSAJE_DNI_REGISTRADO,
@@ -130,3 +131,84 @@ class LoginForm(AuthenticationForm):
 
     def clean_username(self):
         return normalizar_email(self.cleaned_data['username'])
+
+
+# Sugerencias para el <datalist> de raza; se puede escribir cualquier
+# otra.
+RAZAS_SUGERIDAS = {
+    'PERRO': [
+        'Mestizo', 'Labrador Retriever', 'Golden Retriever', 'Caniche',
+        'Bulldog Francés', 'Pastor Alemán', 'Beagle', 'Salchicha',
+        'Yorkshire Terrier', 'Boxer', 'Border Collie', 'Rottweiler',
+        'Chihuahua', 'Shih Tzu', 'Pitbull', 'Dogo Argentino',
+    ],
+    'GATO': [
+        'Mestizo', 'Común europeo', 'Siamés', 'Persa', 'Maine Coon',
+        'Bengalí', 'Ragdoll', 'Británico de pelo corto', 'Sphynx',
+        'Angora', 'Azul ruso',
+    ],
+}
+
+
+class MascotaForm(forms.Form):
+    """Solo valida formato. Las reglas de negocio (especie, fecha
+    futura, rango de peso, nombre repetido) las valida
+    clinica.services.mascotas y sus errores se agregan al form."""
+
+    nombre = forms.CharField(label='Nombre', max_length=100)
+    especie = forms.ChoiceField(
+        label='Especie', choices=ESPECIES, widget=forms.RadioSelect,
+    )
+    raza = forms.CharField(
+        label='Raza',
+        max_length=50,
+        help_text='Elegí de la lista o escribila. Si no la sabés, poné '
+                  '"Mestizo".',
+    )
+    fecha_nacimiento = forms.DateField(
+        label='Fecha de nacimiento',
+        widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+        help_text='Si no la sabés exacta, poné una aproximada.',
+    )
+    peso_kg = forms.DecimalField(
+        label='Peso (kg)',
+        max_digits=5,
+        decimal_places=2,
+        widget=forms.NumberInput(
+            attrs={'step': '0.01', 'min': '0.01', 'inputmode': 'decimal'},
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for nombre, campo in self.fields.items():
+            if nombre != 'especie':
+                campo.widget.attrs.setdefault('class', 'form-control')
+        self.fields['raza'].widget.attrs['list'] = (
+            f'razas-{self.especie_seleccionada.lower()}'
+        )
+
+    @classmethod
+    def desde_mascota(cls, mascota):
+        return cls(initial={
+            'nombre': mascota.nombre,
+            'especie': mascota.especie,
+            'raza': mascota.raza,
+            'fecha_nacimiento': mascota.fecha_nacimiento,
+            'peso_kg': mascota.peso_kg,
+        })
+
+    @property
+    def especie_seleccionada(self):
+        valor = self['especie'].value() or 'PERRO'
+        return valor if valor in RAZAS_SUGERIDAS else 'PERRO'
+
+    @property
+    def razas_sugeridas(self):
+        return RAZAS_SUGERIDAS
+
+    def datos_mascota(self):
+        """Argumentos para registrar_mascota / actualizar_mascota."""
+        return {campo: self.cleaned_data[campo] for campo in (
+            'nombre', 'especie', 'raza', 'fecha_nacimiento', 'peso_kg',
+        )}
