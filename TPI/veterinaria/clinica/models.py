@@ -1,10 +1,17 @@
+from django.conf import settings
 from django.db import models
 
 
 class Dueno(models.Model):
+    usuario = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='dueno',
+    )
     nombre = models.CharField(max_length=100)
+    apellido = models.CharField(max_length=100)
     dni = models.CharField(max_length=20, unique=True)
-    email = models.EmailField()
+    email = models.EmailField(unique=True)
     telefono = models.CharField(max_length=20)
     fecha_registro = models.DateTimeField(auto_now_add=True)
     obra_social = models.ForeignKey(
@@ -20,7 +27,7 @@ class Dueno(models.Model):
         verbose_name_plural = 'Dueños'
 
     def __str__(self):
-        return f'{self.nombre} ({self.dni})'
+        return f'{self.nombre} {self.apellido} ({self.dni})'
 
 
 class Mascota(models.Model):

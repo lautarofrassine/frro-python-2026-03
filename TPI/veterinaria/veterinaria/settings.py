@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 import os
+import sys
 from pathlib import Path
 
 from django.contrib.messages import constants as messages
@@ -95,6 +96,17 @@ DATABASES = {
     }
 }
 
+# Los tests corren contra SQLite en memoria para no crear/borrar la base
+# test_* en el servidor MySQL compartido de Aiven (dos integrantes
+# corriendo tests a la vez se pisarian la misma base de prueba).
+if len(sys.argv) > 1 and sys.argv[1] == 'test':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
+    }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
@@ -130,9 +142,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-ar'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Argentina/Buenos_Aires'
 
 USE_I18N = True
 
@@ -154,3 +166,16 @@ MESSAGE_TAGS = {
     messages.WARNING: 'alert-warning',
     messages.ERROR: 'alert-danger',
 }
+
+
+# Autenticacion: User de Django (contraseña hasheada + sesion por
+# cookie), vinculado 1 a 1 con clinica.Dueno.
+LOGIN_URL = 'clinica:ingresar'
+LOGIN_REDIRECT_URL = 'clinica:panel'
+LOGOUT_REDIRECT_URL = 'core:inicio'
+
+# Explicito por requisito de la catedra: PBKDF2-SHA256 es el hasher
+# con el que se guardan las contraseñas nuevas.
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+]

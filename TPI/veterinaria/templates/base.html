@@ -78,11 +78,51 @@
                         </a>
                     </li>
                 </ul>
-                <div class="d-flex gap-2 mt-3 mt-lg-0">
-                    <a href="#" class="btn btn-outline-brand">Ingresar</a>
-                    <a href="{% url 'atencion:triage' %}" class="btn btn-brand">
-                        Sacar turno
-                    </a>
+                <div class="d-flex flex-wrap gap-2 mt-3 mt-lg-0">
+                    {% if user.is_authenticated %}
+                        <div class="dropdown">
+                            <button class="btn btn-outline-brand dropdown-toggle"
+                                    type="button" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                <i class="bi bi-person-circle me-1"></i>
+                                Hola, {{ user.first_name|default:user.username }}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item"
+                                       href="{% url 'clinica:panel' %}">
+                                        <i class="bi bi-grid me-1"></i>
+                                        Mi panel
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post"
+                                          action="{% url 'clinica:salir' %}">
+                                        {% csrf_token %}
+                                        <button type="submit"
+                                                class="dropdown-item">
+                                            <i class="bi bi-box-arrow-right me-1"></i>
+                                            Salir
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                        <a href="{% url 'atencion:triage' %}"
+                           class="btn btn-brand">
+                            Sacar turno
+                        </a>
+                    {% else %}
+                        <a href="{% url 'clinica:ingresar' %}"
+                           class="btn btn-outline-brand">
+                            Ingresar
+                        </a>
+                        <a href="{% url 'clinica:registro' %}"
+                           class="btn btn-brand">
+                            Registrarse
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>

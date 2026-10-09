@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
-from django.test import SimpleTestCase
+from django.contrib.auth import get_user_model
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from atencion.forms import TriageForm
@@ -19,7 +20,30 @@ def _datos_post_validos(**overrides):
     return datos
 
 
-class TriageViewTests(SimpleTestCase):
+class TriageSinSesionTests(SimpleTestCase):
+
+    def test_sin_sesion_redirige_al_login_con_next(self):
+        url_triage = reverse('atencion:triage')
+
+        response = self.client.get(url_triage)
+
+        self.assertRedirects(
+            response,
+            f"{reverse('clinica:ingresar')}?next={url_triage}",
+            fetch_redirect_response=False,
+        )
+
+
+class TriageViewTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.usuario = get_user_model().objects.create_user(
+            username='ana@mail.com', password='no-importa-aca',
+        )
+
+    def setUp(self):
+        self.client.force_login(self.usuario)
 
     def test_get_muestra_formulario(self):
         response = self.client.get(reverse('atencion:triage'))

@@ -6,9 +6,12 @@ from .models import AplicacionVacuna, Dueno, HistorialClinico, Mascota, Vacuna
 @admin.register(Dueno)
 class DuenoAdmin(admin.ModelAdmin):
     list_display = (
-        'nombre', 'dni', 'email', 'telefono', 'obra_social', 'fecha_registro',
+        'nombre', 'apellido', 'dni', 'email', 'telefono', 'usuario',
+        'obra_social', 'fecha_registro',
     )
-    search_fields = ('nombre', 'dni', 'email')
+    search_fields = ('nombre', 'apellido', 'dni', 'email', 'usuario__username')
+    list_select_related = ('usuario', 'obra_social')
+    raw_id_fields = ('usuario',)
 
 
 @admin.register(Mascota)

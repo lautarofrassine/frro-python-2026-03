@@ -1,8 +1,3 @@
-def registrar_dueno(nombre, dni, email, telefono, obra_social=None):
-    """Crea un Dueno validando que el DNI no esté ya registrado."""
-    raise NotImplementedError
-
-
 def registrar_mascota(dueno, nombre, especie, raza, fecha_nacimiento, peso_kg):
     """Crea una Mascota asociada a un Dueno existente."""
     raise NotImplementedError

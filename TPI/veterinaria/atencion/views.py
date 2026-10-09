@@ -1,11 +1,13 @@
 # Regla del proyecto: las vistas solo llaman a funciones de services/,
 # nunca acceden a los modelos ni contienen reglas de negocio.
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
 from atencion.forms import TriageForm
 from atencion.services.triage import clasificar_urgencia
 
 
+@login_required
 def triage_view(request):
     if request.method == 'POST':
         form = TriageForm(request.POST)
