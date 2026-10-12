@@ -1,13 +1,17 @@
 from django.contrib import admin
 
-from .models import NivelUrgencia, Prescripcion, Turno, Veterinario
+from .models import NivelUrgencia, Prescripcion, Turno, Veterinario,HorarioAtencion
 
+class HorarioAtencionInline(admin.TabularInline):
+    model=HorarioAtencion
+    extra=1
 
 @admin.register(Veterinario)
 class VeterinarioAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'matricula', 'especialidad', 'estado')
     search_fields = ('nombre', 'matricula', 'especialidad')
     list_filter = ('estado', 'especialidad')
+    inlines=[HorarioAtencionInline]
 
 
 @admin.register(NivelUrgencia)
