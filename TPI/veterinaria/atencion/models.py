@@ -9,7 +9,6 @@ class Veterinario(models.Model):
     nombre = models.CharField(max_length=100)
     matricula = models.CharField(max_length=20, unique=True)
     especialidad = models.CharField(max_length=100)
-    horario_disponible = models.CharField(max_length=200)
     estado = models.CharField(
         max_length=20,
         choices=Estado.choices,
@@ -23,6 +22,24 @@ class Veterinario(models.Model):
     def __str__(self):
         return f'{self.nombre} (mat. {self.matricula})'
 
+class HorarioAtencion(models.Model):
+    class DiaSemana(models.IntegerChoices):
+        LUNES = 0, 'Lunes'
+        MARTES = 1, 'Martes'
+        MIERCOLES = 2, 'Miércoles'
+        JUEVES = 3, 'Jueves'
+        VIERNES = 4, 'Viernes'
+        SABADO = 5, 'Sábado'
+        DOMINGO = 6, 'Domingo'
+
+    veterinario = models.ForeignKey(Veterinario, on_delete=models.CASCADE, related_name='horarios_atencion')
+    dia_semana = models.IntegerField(choices=DiaSemana.choices)
+    hora_inicio = models.TimeField()
+    hora_fin = models.TimeField()
+
+    class Meta:
+        verbose_name = 'Horario de Atención'
+        unique_together = ('veterinario', 'dia_semana', 'hora_inicio')
 
 class NivelUrgencia(models.Model):
     class Nivel(models.TextChoices):

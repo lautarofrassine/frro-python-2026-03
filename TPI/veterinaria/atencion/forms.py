@@ -1,6 +1,7 @@
 from django import forms
 
 from atencion.ml.preparar_datos import FEATURES
+from clinica.models import Mascota  # Asegurate de que esta ruta sea correcta
 
 # Temperatura corporal normal aproximada de un perro/gato sano, en °C.
 # Se usa cuando el dueño no sabe/no midio la temperatura de la mascota.
@@ -13,6 +14,12 @@ CAMPOS_SINTOMAS = [
 
 
 class TriageForm(forms.Form):
+    mascota = forms.ModelChoiceField(
+        queryset=Mascota.objects.none(),
+        label='¿A qué mascota vamos a evaluar?',
+        empty_label='-- Seleccioná tu mascota --',
+        widget=forms.Select(attrs={'class': 'form-select mb-3'}),
+    )
     especie = forms.ChoiceField(
         choices=[('perro', 'Perro'), ('gato', 'Gato')],
         label='Especie',
@@ -79,7 +86,15 @@ class TriageForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+        # Extraemos el usuario antes de inicializar el form
+        usuario = kwargs.pop('usuario', None)
         super().__init__(*args, **kwargs)
+        
+        if usuario:
+            # Filtramos las mascotas para que solo vea las suyas.
+            # Cambiá 'dueno=usuario' por la ForeignKey real de tu modelo Mascota.
+            self.fields['mascota'].queryset = Mascota.objects.filter(dueno__usuario=usuario)
+
         for campo in CAMPOS_SINTOMAS:
             self.fields[campo].widget.attrs['class'] = 'form-check-input'
 
