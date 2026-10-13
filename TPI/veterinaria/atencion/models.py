@@ -15,6 +15,7 @@ class Veterinario(models.Model):
         TRAUMATOLOGIA = 'TRAUMATOLOGIA', 'Traumatología'
         GASTROENTEROLOGIA = 'GASTROENTEROLOGIA', 'Gastroenterología'
         OFTALMOLOGIA = 'OFTALMOLOGIA', 'Oftalmología'
+        VACUNACION = 'VACUNACION', 'Vacunación'
 
     nombre = models.CharField(max_length=100)
     matricula = models.CharField(max_length=20, unique=True)
@@ -91,6 +92,15 @@ class Turno(models.Model):
     nivel_urgencia = models.ForeignKey(
         NivelUrgencia,
         on_delete=models.PROTECT,
+        related_name='turnos',
+    )
+    # Un turno de vacunacion es un turno comun marcado con la vacuna que
+    # se va a aplicar (ver clinica/services/vacunas.py).
+    vacuna = models.ForeignKey(
+        'clinica.Vacuna',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
         related_name='turnos',
     )
     fecha_hora = models.DateTimeField()

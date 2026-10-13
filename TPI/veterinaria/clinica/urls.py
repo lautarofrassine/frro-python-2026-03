@@ -34,4 +34,15 @@ urlpatterns = [
         views.mascota_baja_view,
         name='mascota_baja',
     ),
+    path('vacunas/', views.vacunas_view, name='vacunas'),
+    path(
+        'vacunas/reservar/',
+        views.vacuna_reservar_view,
+        name='vacuna_reservar',
+    ),
+    path(
+        'vacunas/turno/<int:turno_id>/',
+        views.vacuna_turno_view,
+        name='vacuna_turno',
+    ),
 ]

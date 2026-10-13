@@ -65,6 +65,11 @@ class Mascota(models.Model):
 
 class Vacuna(models.Model):
     nombre = models.CharField(max_length=100)
+    # Etiqueta breve para el calendario de vacunacion.
+    nombre_corto = models.CharField(max_length=15)
+    especie = models.CharField(
+        max_length=10, choices=Mascota.Especie.choices,
+    )
     descripcion = models.TextField()
     periodicidad_dias = models.IntegerField()
 
@@ -73,7 +78,7 @@ class Vacuna(models.Model):
         verbose_name_plural = 'Vacunas'
 
     def __str__(self):
-        return self.nombre
+        return f'{self.nombre} ({self.get_especie_display()})'
 
 
 class AplicacionVacuna(models.Model):

@@ -25,7 +25,8 @@ class MascotaAdmin(admin.ModelAdmin):
 
 @admin.register(Vacuna)
 class VacunaAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'periodicidad_dias')
+    list_display = ('nombre', 'nombre_corto', 'especie', 'periodicidad_dias')
+    list_filter = ('especie',)
     search_fields = ('nombre',)
 
 

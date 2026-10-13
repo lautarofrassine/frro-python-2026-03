@@ -12,12 +12,12 @@ from atencion.services.veterinarios import cargar_veterinarios_iniciales
 
 class CargarVeterinariosTests(TestCase):
 
-    def test_crea_18_veterinarios_activos_3_por_especialidad(self):
+    def test_crea_21_veterinarios_activos_3_por_especialidad(self):
         resumen = cargar_veterinarios_iniciales()
 
-        self.assertEqual(Veterinario.objects.count(), 18)
+        self.assertEqual(Veterinario.objects.count(), 21)
         self.assertEqual(
-            Veterinario.objects.filter(estado='ACTIVO').count(), 18,
+            Veterinario.objects.filter(estado='ACTIVO').count(), 21,
         )
         for especialidad in Veterinario.Especialidad:
             with self.subTest(especialidad=especialidad):
@@ -40,8 +40,8 @@ class CargarVeterinariosTests(TestCase):
         )
         nombres = set(Veterinario.objects.values_list('nombre', flat=True))
 
-        self.assertEqual(len(matriculas), 18)
-        self.assertEqual(len(nombres), 18)
+        self.assertEqual(len(matriculas), 21)
+        self.assertEqual(len(nombres), 21)
         self.assertTrue(all(m.startswith('MP-5') for m in matriculas))
         self.assertFalse(matriculas & {'MP-1234', 'MP-5678', 'MP-9012'})
 
@@ -78,8 +78,8 @@ class CargarVeterinariosTests(TestCase):
 
         resumen = cargar_veterinarios_iniciales()
 
-        self.assertEqual(Veterinario.objects.count(), 18)
-        self.assertEqual(HorarioAtencion.objects.count(), 18 * 6)
+        self.assertEqual(Veterinario.objects.count(), 21)
+        self.assertEqual(HorarioAtencion.objects.count(), 21 * 6)
         self.assertTrue(all(
             cantidades == {'creados': 0, 'existentes': 3}
             for cantidades in resumen.values()
@@ -96,7 +96,25 @@ class CargarVeterinariosTests(TestCase):
         existente = Veterinario.objects.get(matricula='MP-5001')
         self.assertEqual(existente.nombre, 'Dr. Ya Existente')
         self.assertEqual(existente.horarios_atencion.count(), 0)
-        self.assertEqual(Veterinario.objects.count(), 18)
+        self.assertEqual(Veterinario.objects.count(), 21)
+
+    def test_los_de_vacunacion_se_crean_solo_si_no_hay_ninguno(self):
+        Veterinario.objects.create(
+            nombre='Dra. Vacunadora Existente', matricula='MP-7000',
+            especialidad=Veterinario.Especialidad.VACUNACION,
+        )
+
+        resumen = cargar_veterinarios_iniciales()
+
+        de_vacunacion = Veterinario.objects.filter(especialidad='VACUNACION')
+        self.assertEqual(
+            list(de_vacunacion.values_list('matricula', flat=True)),
+            ['MP-7000'],
+        )
+        self.assertEqual(
+            resumen['Vacunación'], {'creados': 0, 'existentes': 1},
+        )
+        self.assertEqual(Veterinario.objects.count(), 19)
 
     def test_comando_muestra_el_resumen(self):
         salida = StringIO()
@@ -106,7 +124,7 @@ class CargarVeterinariosTests(TestCase):
         self.assertIn(
             'Cardiología: 3 creados, 0 ya existían', salida.getvalue(),
         )
-        self.assertIn('Total: 18 creados, 0 ya existían.', salida.getvalue())
+        self.assertIn('Total: 21 creados, 0 ya existían.', salida.getvalue())
 
 
 class MigracionEspecialidadTests(TestCase):

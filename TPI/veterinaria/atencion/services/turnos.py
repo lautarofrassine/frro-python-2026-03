@@ -156,3 +156,20 @@ def historial_turnos(dueno, limite=10):
         )
         .order_by('-fecha_hora')[:limite]
     )
+
+
+def turnos_disponibles_por_especialidad(especialidad, dias_adelante=7):
+    """Horarios libres, con el mismo formato que
+    obtener_turnos_disponibles, solo de veterinarios activos de esa
+    especialidad. Filtra su resultado para no duplicar el calculo."""
+    veterinarios = set(
+        Veterinario.objects.filter(
+            especialidad=especialidad,
+            estado=Veterinario.Estado.ACTIVO,
+        ).values_list('id', flat=True)
+    )
+    return [
+        horario
+        for horario in obtener_turnos_disponibles(dias_adelante)
+        if horario['veterinario_id'] in veterinarios
+    ]

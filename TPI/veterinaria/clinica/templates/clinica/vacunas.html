@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% load mascotas_extras %}
+
+{% block titulo %}Vacunas - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <h1 class="h2 mb-4">
+            <i class="fa-solid fa-syringe text-success me-2"></i>Vacunas
+        </h1>
+
+        {% if not mascotas %}
+            <div class="row justify-content-center">
+                <div class="col-lg-7">
+                    <div class="card tarjeta-triage">
+                        <div class="card-body p-5 text-center">
+                            <i class="fa-solid fa-paw estado-vacio-icono mb-3"></i>
+                            <h2 class="h4">Todavía no registraste mascotas</h2>
+                            <p class="text-secondary mb-4">
+                                Registrá a tu mascota para reservar sus
+                                vacunas y ver su calendario.
+                            </p>
+                            <a href="{% url 'clinica:mascota_nueva' %}"
+                               class="btn btn-brand btn-lg">
+                                <i class="bi bi-plus-lg me-1"></i>
+                                Registrar mascota
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            {% with mascota=calendario.mascota %}
+            <div class="d-flex flex-wrap justify-content-between
+                        align-items-center gap-3 mb-4">
+                <div class="d-flex flex-wrap gap-2">
+                    {% for opcion in mascotas %}
+                        <a href="{% url 'clinica:vacunas' %}?mascota={{ opcion.pk }}"
+                           class="btn btn-outline-brand pastilla-mascota
+                                  {% if opcion.pk == mascota.pk %}activa{% endif %}">
+                            <i class="fa-solid {{ opcion.especie|icono_especie }} me-1"></i>
+                            {{ opcion.nombre }}
+                        </a>
+                    {% endfor %}
+                </div>
+                <a href="{% url 'clinica:vacuna_reservar' %}?mascota={{ mascota.pk }}"
+                   class="btn btn-brand">
+                    <i class="bi bi-plus-lg me-1"></i>Reservar vacuna
+                </a>
+            </div>
+
+            <div class="card tarjeta-triage">
+                <div class="card-body p-3 p-md-4">
+                    <div class="d-flex justify-content-between
+                                align-items-center mb-3">
+                        <a href="{% url 'clinica:vacunas' %}?mascota={{ mascota.pk }}&mes={{ calendario.mes_anterior }}"
+                           class="btn btn-outline-brand btn-sm"
+                           aria-label="Mes anterior">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                        <h2 class="h5 mb-0">
+                            {{ calendario.primer_dia|date:"F \d\e Y" }}
+                        </h2>
+                        <a href="{% url 'clinica:vacunas' %}?mascota={{ mascota.pk }}&mes={{ calendario.mes_siguiente }}"
+                           class="btn btn-outline-brand btn-sm"
+                           aria-label="Mes siguiente">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </div>
+
+                    {# Almanaque: en celular 7 columnas no entran, se usa la lista de abajo. #}
+                    <div class="d-none d-md-block">
+                        <table class="almanaque">
+                            <thead>
+                                <tr>
+                                    <th>Dom</th><th>Lun</th><th>Mar</th>
+                                    <th>Mié</th><th>Jue</th><th>Vie</th>
+                                    <th>Sáb</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for semana in calendario.semanas %}
+                                    <tr>
+                                        {% for dia in semana %}
+                                            <td class="{% if not dia.del_mes %}otro-mes{% endif %}
+                                                       {% if dia.es_hoy %}hoy{% endif %}"
+                                                data-fecha="{{ dia.fecha|date:'Y-m-d' }}">
+                                                <span class="numero-dia">{{ dia.fecha.day }}</span>
+                                                {% for turno in dia.turnos %}
+                                                    <a href="{% url 'clinica:vacuna_turno' turno.pk %}"
+                                                       class="etiqueta-vacuna"
+                                                       title="{{ turno.vacuna.nombre }}">
+                                                        <i class="fa-solid fa-syringe"></i>
+                                                        {{ turno.vacuna.nombre_corto }}
+                                                        {{ turno.fecha_hora|date:"H:i" }}
+                                                    </a>
+                                                {% endfor %}
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if calendario.turnos %}
+                        <ul class="list-group list-group-flush d-md-none">
+                            {% for turno in calendario.turnos %}
+                                <li class="list-group-item px-0">
+                                    <a href="{% url 'clinica:vacuna_turno' turno.pk %}"
+                                       class="d-flex align-items-center gap-3
+                                              text-reset text-decoration-none">
+                                        <span class="avatar-mascota chico">
+                                            <i class="fa-solid fa-syringe"></i>
+                                        </span>
+                                        <span>
+                                            <span class="fw-semibold d-block">
+                                                {{ turno.vacuna.nombre }}
+                                            </span>
+                                            <span class="dato-mascota">
+                                                {{ turno.fecha_hora|date:"l j \d\e F"|capfirst }}
+                                                · {{ turno.fecha_hora|date:"H:i" }} hs
+                                            </span>
+                                        </span>
+                                        <i class="bi bi-chevron-right ms-auto"></i>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-secondary text-center small mt-3 mb-0">
+                            No hay vacunas reservadas este mes.
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endwith %}
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

@@ -7,6 +7,8 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.utils.http import urlencode
 
 from clinica.forms import MascotaForm, RegistroForm
 from clinica.services.mascotas import (
@@ -22,6 +24,19 @@ from clinica.services.usuarios import (
     RegistroError,
     obtener_dueno_de_usuario,
     registrar_dueno,
+)
+from clinica.services.vacunas import (
+    TurnoVacunaNoEncontrado,
+    VacunaError,
+    VacunaNoEncontrada,
+    calendario_vacunacion,
+    detalle_turno_vacuna,
+    horarios_libres_vacunacion,
+    mes_de_turno,
+    obtener_horario_libre,
+    obtener_vacuna_para_mascota,
+    reservar_turno_vacuna,
+    vacunas_para_mascota,
 )
 
 
@@ -146,3 +161,106 @@ def mascota_baja_view(request, dueno, mascota_id):
         messages.success(request, f'{mascota.nombre} fue dado/a de baja.')
         return redirect('clinica:mascotas')
     return render(request, 'clinica/mascota_baja.html', {'mascota': mascota})
+
+
+def _url_con_parametros(nombre, **parametros):
+    return f'{reverse(nombre)}?{urlencode(parametros)}'
+
+
+@dueno_requerido
+def vacunas_view(request, dueno):
+    mascotas = listar_mascotas(dueno)
+    if not mascotas:
+        return render(request, 'clinica/vacunas.html', {'mascotas': []})
+
+    # Por defecto, la primera mascota del dueño.
+    mascota_id = request.GET.get('mascota') or mascotas[0].pk
+    try:
+        calendario = calendario_vacunacion(
+            dueno, mascota_id, request.GET.get('mes'),
+        )
+    except MascotaNoEncontrada:
+        raise Http404('Mascota no encontrada.')
+    return render(request, 'clinica/vacunas.html', {
+        'mascotas': mascotas,
+        'calendario': calendario,
+    })
+
+
+@dueno_requerido
+def vacuna_turno_view(request, dueno, turno_id):
+    try:
+        turno = detalle_turno_vacuna(dueno, turno_id)
+    except TurnoVacunaNoEncontrado:
+        raise Http404('Turno no encontrado.')
+    return render(request, 'clinica/vacuna_turno.html', {
+        'turno': turno,
+        'mes': mes_de_turno(turno),
+    })
+
+
+@dueno_requerido
+def vacuna_reservar_view(request, dueno):
+    """Tres pasos segun los parametros recibidos: 1) elegir vacuna,
+    2) elegir horario, 3) confirmar (POST reserva)."""
+    datos = request.POST if request.method == 'POST' else request.GET
+    mascota = _mascota_o_404(dueno, datos.get('mascota'))
+    url_paso_1 = _url_con_parametros(
+        'clinica:vacuna_reservar', mascota=mascota.pk,
+    )
+
+    # Paso 1: elegir la vacuna.
+    if not datos.get('vacuna'):
+        return render(request, 'clinica/vacuna_reservar.html', {
+            'paso': 1,
+            'mascota': mascota,
+            'vacunas': vacunas_para_mascota(mascota),
+        })
+    try:
+        vacuna = obtener_vacuna_para_mascota(mascota, datos.get('vacuna'))
+    except VacunaNoEncontrada:
+        raise Http404('Vacuna no encontrada.')
+    except VacunaError as error:
+        messages.error(request, str(error))
+        return redirect(url_paso_1)
+    url_paso_2 = _url_con_parametros(
+        'clinica:vacuna_reservar', mascota=mascota.pk, vacuna=vacuna.pk,
+    )
+
+    # Paso 2: elegir el horario.
+    veterinario_id = datos.get('veterinario')
+    fecha_hora = datos.get('fecha_hora')
+    if not (veterinario_id and fecha_hora):
+        return render(request, 'clinica/vacuna_reservar.html', {
+            'paso': 2,
+            'mascota': mascota,
+            'vacuna': vacuna,
+            'horarios': horarios_libres_vacunacion(),
+        })
+
+    # Paso 3: confirmar. El POST reserva.
+    try:
+        if request.method == 'POST':
+            turno = reservar_turno_vacuna(
+                dueno, mascota.pk, vacuna.pk, veterinario_id, fecha_hora,
+            )
+            messages.success(
+                request,
+                f'¡Turno de {vacuna.nombre} reservado para '
+                f'{mascota.nombre}!',
+            )
+            return redirect(_url_con_parametros(
+                'clinica:vacunas',
+                mascota=mascota.pk,
+                mes=mes_de_turno(turno),
+            ))
+        horario = obtener_horario_libre(veterinario_id, fecha_hora)
+    except VacunaError as error:
+        messages.error(request, str(error))
+        return redirect(url_paso_2)
+    return render(request, 'clinica/vacuna_reservar.html', {
+        'paso': 3,
+        'mascota': mascota,
+        'vacuna': vacuna,
+        'horario': horario,
+    })

@@ -20,9 +20,9 @@ DIAS_DE_ATENCION = (
 
 _E = Veterinario.Especialidad
 
-# Datos ficticios: 3 veterinarios por especialidad. En cada una hay al
-# menos uno de mañana y uno de tarde. Las matriculas MP-50xx no chocan
-# con las ya cargadas (MP-1234, MP-5678, MP-9012).
+# Datos ficticios: 3 veterinarios por especialidad de consulta. En cada
+# una hay al menos uno de mañana y uno de tarde. Las matriculas MP-50xx
+# no chocan con las ya cargadas (MP-1234, MP-5678, MP-9012).
 VETERINARIOS_INICIALES = [
     ('MP-5001', 'Dra. Laura Fernández', _E.CLINICA_GENERAL, MANANA),
     ('MP-5002', 'Dr. Martín Sosa', _E.CLINICA_GENERAL, TARDE),
@@ -44,12 +44,21 @@ VETERINARIOS_INICIALES = [
     ('MP-5018', 'Dr. Ramiro Correa', _E.OFTALMOLOGIA, TARDE),
 ]
 
+# Los de VACUNACION solo se crean si la clinica todavia no tiene ningun
+# veterinario de esa especialidad.
+VETERINARIOS_VACUNACION = [
+    ('MP-5019', 'Dra. Paula Navarro', _E.VACUNACION, MANANA),
+    ('MP-5020', 'Dr. Ignacio Ferreyra', _E.VACUNACION, TARDE),
+    ('MP-5021', 'Dra. Milagros Suárez', _E.VACUNACION, MANANA),
+]
+
 
 @transaction.atomic
 def cargar_veterinarios_iniciales():
     """Crea los veterinarios de VETERINARIOS_INICIALES que todavia no
     existen (se busca por matricula, asi se puede correr varias veces),
-    todos ACTIVO y con su horario de lunes a sabado.
+    todos ACTIVO y con su horario de lunes a sabado. Los de VACUNACION
+    se crean solo si no hay ninguno de esa especialidad.
 
     Devuelve {etiqueta_especialidad: {'creados': n, 'existentes': n}}.
     """
@@ -57,7 +66,18 @@ def cargar_veterinarios_iniciales():
         etiqueta: {'creados': 0, 'existentes': 0}
         for etiqueta in Veterinario.Especialidad.labels
     }
-    for matricula, nombre, especialidad, franja in VETERINARIOS_INICIALES:
+    a_cargar = list(VETERINARIOS_INICIALES)
+    de_vacunacion = Veterinario.objects.filter(
+        especialidad=Veterinario.Especialidad.VACUNACION,
+    ).count()
+    if de_vacunacion:
+        resumen[Veterinario.Especialidad.VACUNACION.label]['existentes'] = (
+            de_vacunacion
+        )
+    else:
+        a_cargar += VETERINARIOS_VACUNACION
+
+    for matricula, nombre, especialidad, franja in a_cargar:
         veterinario, creado = Veterinario.objects.get_or_create(
             matricula=matricula,
             defaults={

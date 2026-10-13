@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load mascotas_extras turnos_extras %}
+
+{% block titulo %}Turno de vacunación - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7">
+                <div class="card tarjeta-triage">
+                    <div class="card-body p-4 p-md-5">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <span class="avatar-mascota">
+                                <i class="fa-solid fa-syringe"></i>
+                            </span>
+                            <div>
+                                <h1 class="h4 mb-0">{{ turno.vacuna.nombre }}</h1>
+                                <div class="dato-mascota">Turno de vacunación</div>
+                            </div>
+                        </div>
+                        <p class="text-secondary">{{ turno.vacuna.descripcion }}</p>
+
+                        <dl class="row mb-4">
+                            <dt class="col-5 text-secondary">Mascota</dt>
+                            <dd class="col-7">
+                                <i class="fa-solid {{ turno.mascota.especie|icono_especie }} me-1"></i>
+                                {{ turno.mascota.nombre }}
+                            </dd>
+                            <dt class="col-5 text-secondary">Día</dt>
+                            <dd class="col-7">
+                                {{ turno.fecha_hora|date:"l j \d\e F \d\e Y"|capfirst }}
+                            </dd>
+                            <dt class="col-5 text-secondary">Hora</dt>
+                            <dd class="col-7">{{ turno.fecha_hora|date:"H:i" }} hs</dd>
+                            <dt class="col-5 text-secondary">Veterinario</dt>
+                            <dd class="col-7">{{ turno.veterinario.nombre }}</dd>
+                            <dt class="col-5 text-secondary">Estado del turno</dt>
+                            <dd class="col-7">{{ turno.get_estado_display }}</dd>
+                            <dt class="col-5 text-secondary">Pago</dt>
+                            <dd class="col-7 mb-0">
+                                {% with pago=turno|ultimo_pago %}
+                                    {% if pago %}
+                                        {{ pago.get_estado_display }}
+                                    {% else %}
+                                        Sin pago registrado
+                                    {% endif %}
+                                {% endwith %}
+                            </dd>
+                        </dl>
+
+                        <a href="{% url 'clinica:vacunas' %}?mascota={{ turno.mascota.pk }}&mes={{ mes }}"
+                           class="btn btn-outline-brand">
+                            <i class="bi bi-arrow-left me-1"></i>
+                            Volver al calendario
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

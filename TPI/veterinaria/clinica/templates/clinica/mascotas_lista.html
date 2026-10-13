@@ -48,7 +48,11 @@
                                         <div class="fw-semibold">{{ mascota.peso_kg }} kg</div>
                                     </div>
                                 </div>
-                                <div class="d-flex gap-2 mt-auto">
+                                <a href="{% url 'clinica:vacunas' %}?mascota={{ mascota.pk }}"
+                                   class="btn btn-brand mt-auto mb-2">
+                                    <i class="fa-solid fa-syringe me-1"></i>Vacunas
+                                </a>
+                                <div class="d-flex gap-2">
                                     <a href="{% url 'clinica:mascota_editar' mascota.pk %}"
                                        class="btn btn-outline-brand flex-fill">
                                         <i class="bi bi-pencil me-1"></i>Editar

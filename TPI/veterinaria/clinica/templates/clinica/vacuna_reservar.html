@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load mascotas_extras %}
+
+{% block titulo %}Reservar vacuna - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h1 class="h3 mb-2">
+                    <i class="fa-solid fa-syringe text-success me-2"></i>
+                    Reservar vacuna para {{ mascota.nombre }}
+                </h1>
+                <p class="text-secondary mb-4">
+                    <span class="{% if paso == 1 %}fw-bold text-success{% endif %}">1 Vacuna</span>
+                    · <span class="{% if paso == 2 %}fw-bold text-success{% endif %}">2 Horario</span>
+                    · <span class="{% if paso == 3 %}fw-bold text-success{% endif %}">3 Confirmar</span>
+                </p>
+
+                {% if paso == 1 %}
+                    {% if vacunas %}
+                        <div class="row row-cols-1 row-cols-md-2 g-3">
+                            {% for vacuna in vacunas %}
+                                <div class="col">
+                                    <div class="card tarjeta-mascota position-relative">
+                                        <div class="card-body p-4">
+                                            <h2 class="h5">
+                                                <a href="{% url 'clinica:vacuna_reservar' %}?mascota={{ mascota.pk }}&vacuna={{ vacuna.pk }}"
+                                                   class="stretched-link text-reset text-decoration-none">
+                                                    {{ vacuna.nombre }}
+                                                </a>
+                                            </h2>
+                                            <p class="text-secondary mb-0">
+                                                {{ vacuna.descripcion }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="card tarjeta-triage">
+                            <div class="card-body p-4 text-center text-secondary">
+                                Todavía no hay vacunas cargadas para
+                                {{ mascota.get_especie_display|lower }}s.
+                            </div>
+                        </div>
+                    {% endif %}
+
+                {% elif paso == 2 %}
+                    <div class="card tarjeta-triage">
+                        <div class="card-body p-4">
+                            <p class="mb-3">
+                                Vacuna: <strong>{{ vacuna.nombre }}</strong>
+                                <a href="{% url 'clinica:vacuna_reservar' %}?mascota={{ mascota.pk }}"
+                                   class="small ms-2">Cambiar</a>
+                            </p>
+                            {% if horarios %}
+                                <h2 class="h6 text-uppercase text-secondary">
+                                    Próximos horarios libres
+                                </h2>
+                                <div class="d-grid gap-2">
+                                    {% for horario in horarios %}
+                                        <a href="{% url 'clinica:vacuna_reservar' %}?mascota={{ mascota.pk }}&vacuna={{ vacuna.pk }}&veterinario={{ horario.veterinario_id }}&fecha_hora={{ horario.fecha_hora|date:'c'|urlencode:'' }}"
+                                           class="btn btn-outline-brand text-start">
+                                            <i class="bi bi-clock me-1"></i>
+                                            {{ horario.fecha_hora|date:"l j \d\e F"|capfirst }}
+                                            · {{ horario.fecha_hora|date:"H:i" }} hs
+                                            <span class="small opacity-75">
+                                                · {{ horario.veterinario_nombre }}
+                                            </span>
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-secondary mb-0">
+                                    No hay horarios de vacunación libres en
+                                    los próximos días. Probá más tarde.
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                {% else %}
+                    <div class="card tarjeta-triage">
+                        <div class="card-body p-4 p-md-5">
+                            <h2 class="h5 mb-3">Confirmá el turno</h2>
+                            <dl class="row mb-4">
+                                <dt class="col-5 text-secondary">Mascota</dt>
+                                <dd class="col-7">
+                                    <i class="fa-solid {{ mascota.especie|icono_especie }} me-1"></i>
+                                    {{ mascota.nombre }}
+                                </dd>
+                                <dt class="col-5 text-secondary">Vacuna</dt>
+                                <dd class="col-7">{{ vacuna.nombre }}</dd>
+                                <dt class="col-5 text-secondary">Día y hora</dt>
+                                <dd class="col-7">
+                                    {{ horario.fecha_hora|date:"l j \d\e F"|capfirst }}
+                                    · {{ horario.fecha_hora|date:"H:i" }} hs
+                                </dd>
+                                <dt class="col-5 text-secondary">Veterinario</dt>
+                                <dd class="col-7 mb-0">{{ horario.veterinario_nombre }}</dd>
+                            </dl>
+                            <form method="post"
+                                  action="{% url 'clinica:vacuna_reservar' %}"
+                                  class="d-flex flex-column flex-sm-row gap-2">
+                                {% csrf_token %}
+                                <input type="hidden" name="mascota" value="{{ mascota.pk }}">
+                                <input type="hidden" name="vacuna" value="{{ vacuna.pk }}">
+                                <input type="hidden" name="veterinario" value="{{ horario.veterinario_id }}">
+                                <input type="hidden" name="fecha_hora" value="{{ horario.fecha_hora|date:'c' }}">
+                                <button type="submit" class="btn btn-brand btn-lg flex-fill">
+                                    Confirmar turno
+                                </button>
+                                <a href="{% url 'clinica:vacuna_reservar' %}?mascota={{ mascota.pk }}&vacuna={{ vacuna.pk }}"
+                                   class="btn btn-outline-secondary btn-lg">
+                                    Elegir otro horario
+                                </a>
+                            </form>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <p class="mt-4 mb-0">
+                    <a href="{% url 'clinica:vacunas' %}?mascota={{ mascota.pk }}">
+                        <i class="bi bi-arrow-left me-1"></i>Volver al calendario
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
