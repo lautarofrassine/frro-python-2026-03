@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% load mascotas_extras turnos_extras %}
+
+{% block titulo %}Mis consultas - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        {% if not dueno %}
+            <div class="row justify-content-center">
+                <div class="col-lg-7">
+                    <div class="card tarjeta-triage">
+                        <div class="card-body p-4 p-md-5 text-center">
+                            <i class="bi bi-person-badge fs-1 text-success d-block mb-3"></i>
+                            <h1 class="h4">Sección solo para dueños</h1>
+                            <p class="text-secondary">
+                                Tu usuario es del personal de la clínica y
+                                no tiene consultas propias. Los turnos de
+                                los clientes se ven desde la administración.
+                            </p>
+                            {% if user.is_staff %}
+                                <a href="{% url 'admin:index' %}" class="btn btn-brand">
+                                    Ir a la administración
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="d-flex flex-wrap justify-content-between align-items-center
+                        gap-3 mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="bi bi-clipboard2-heart text-success me-2"></i>
+                    Mis consultas
+                </h1>
+                <a href="{% url 'atencion:triage' %}" class="btn btn-brand btn-lg">
+                    <i class="bi bi-calendar2-plus me-1"></i>Sacar turno
+                </a>
+            </div>
+
+            <h2 class="h5 mb-3">Próximos turnos</h2>
+            {% if proximos %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-5">
+                    {% for turno in proximos %}
+                        <div class="col">
+                            <div class="card tarjeta-mascota">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between
+                                                align-items-start gap-2 mb-3">
+                                        <div>
+                                            <div class="fw-bold">
+                                                {{ turno.fecha_hora|date:"l j \d\e F"|capfirst }}
+                                            </div>
+                                            <div class="fs-4 fw-bold text-success lh-1">
+                                                {{ turno.fecha_hora|date:"H:i" }} hs
+                                            </div>
+                                        </div>
+                                        {% if turno.fecha_hora|es_hoy %}
+                                            <span class="badge text-bg-warning">Hoy</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <span class="avatar-mascota chico">
+                                            <i class="fa-solid {{ turno.mascota.especie|icono_especie }}"></i>
+                                        </span>
+                                        <span class="fw-semibold">{{ turno.mascota.nombre }}</span>
+                                    </div>
+
+                                    <div class="dato-mascota">
+                                        <i class="bi bi-person-badge me-1"></i>
+                                        {{ turno.veterinario.nombre }}
+                                    </div>
+                                    <div class="dato-mascota mb-3">
+                                        <i class="bi bi-heart-pulse me-1"></i>
+                                        {{ turno.veterinario.especialidad }}
+                                    </div>
+
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <span class="badge rounded-pill text-bg-light border">
+                                            {{ turno.get_estado_display }}
+                                        </span>
+                                        {% with pago=turno|ultimo_pago %}
+                                            {% if pago %}
+                                                <span class="badge rounded-pill text-bg-light border">
+                                                    Pago: {{ pago.get_estado_display }}
+                                                </span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="card tarjeta-triage mb-5">
+                    <div class="card-body p-5 text-center">
+                        <i class="bi bi-calendar2-x estado-vacio-icono d-block mb-3"></i>
+                        <h3 class="h4">No tenés turnos reservados</h3>
+                        <p class="text-secondary mb-4">
+                            Cuando saques un turno lo vas a ver acá.
+                        </p>
+                        <a href="{% url 'atencion:triage' %}" class="btn btn-brand btn-lg">
+                            <i class="bi bi-calendar2-plus me-1"></i>Sacar turno
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="accordion" id="acordeon-historial">
+                <div class="accordion-item border-0 tarjeta-mascota overflow-hidden">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed fw-semibold"
+                                type="button" data-bs-toggle="collapse"
+                                data-bs-target="#historial"
+                                aria-expanded="false" aria-controls="historial">
+                            Historial ({{ historial|length }})
+                        </button>
+                    </h2>
+                    <div id="historial" class="accordion-collapse collapse"
+                         data-bs-parent="#acordeon-historial">
+                        <div class="accordion-body">
+                            {% if historial %}
+                                <ul class="list-group list-group-flush">
+                                    {% for turno in historial %}
+                                        <li class="list-group-item px-0 d-flex flex-wrap
+                                                   justify-content-between gap-2">
+                                            <div>
+                                                <span class="fw-semibold">
+                                                    {{ turno.fecha_hora|date:"d/m/Y H:i" }} hs
+                                                </span>
+                                                · {{ turno.mascota.nombre }}
+                                                <div class="dato-mascota">
+                                                    {{ turno.veterinario.nombre }}
+                                                    · {{ turno.veterinario.especialidad }}
+                                                </div>
+                                            </div>
+                                            <span class="badge rounded-pill text-bg-light
+                                                         border align-self-center">
+                                                {{ turno.get_estado_display }}
+                                            </span>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-secondary mb-0">
+                                    Todavía no tenés consultas anteriores.
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

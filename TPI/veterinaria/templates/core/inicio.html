@@ -94,11 +94,17 @@
         </p>
         <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
             <div class="col">
-                <div class="tarjeta-servicio p-4">
+                {# login_required manda a ingresar con next=/atencion/consultas/ si no hay sesion. #}
+                <div class="tarjeta-servicio p-4 position-relative">
                     <div class="icono-servicio mb-3">
                         <i class="bi bi-clipboard2-heart"></i>
                     </div>
-                    <h3 class="h5">Consultas</h3>
+                    <h3 class="h5">
+                        <a href="{% url 'atencion:consultas' %}"
+                           class="stretched-link text-reset text-decoration-none">
+                            Consultas
+                        </a>
+                    </h3>
                     <p class="text-secondary mb-0">
                         Chequeos generales y seguimiento de la salud de
                         tu mascota.

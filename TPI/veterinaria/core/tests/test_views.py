@@ -12,6 +12,13 @@ class InicioViewTests(SimpleTestCase):
         self.assertContains(response, 'ClinicaVet24')
         self.assertContains(response, reverse('atencion:triage'))
 
+    def test_tarjeta_consultas_lleva_a_mis_consultas(self):
+        response = self.client.get(reverse('core:inicio'))
+
+        self.assertContains(
+            response, f'href="{reverse("atencion:consultas")}"',
+        )
+
     def test_tarjeta_mascotas_reemplaza_a_cirugias(self):
         response = self.client.get(reverse('core:inicio'))
 

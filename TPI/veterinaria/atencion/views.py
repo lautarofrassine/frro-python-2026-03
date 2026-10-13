@@ -7,10 +7,24 @@ from atencion.services.triage import clasificar_urgencia
 from atencion.services.turnos import (
     asignar_turno_automatico,
     crear_turno_manual,
+    historial_turnos,
     obtener_turnos_disponibles,
+    proximos_turnos,
 )
 from clinica.services.mascotas import listar_mascotas
 from clinica.services.usuarios import obtener_dueno_de_usuario
+
+
+@login_required
+def consultas_view(request):
+    # El personal de la clinica no tiene Dueno: los services devuelven
+    # listas vacias y la plantilla muestra un mensaje.
+    dueno = obtener_dueno_de_usuario(request.user)
+    return render(request, 'atencion/consultas.html', {
+        'dueno': dueno,
+        'proximos': proximos_turnos(dueno),
+        'historial': historial_turnos(dueno),
+    })
 
 
 @login_required

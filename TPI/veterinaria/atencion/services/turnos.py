@@ -101,3 +101,58 @@ def cambiar_estado_turno(turno, nuevo_estado):
     """Cambia el estado de un Turno validando las transiciones permitidas."""
     # Acá implementás tu lógica futura
     pass
+
+
+# ---------------------------------------------------------------------
+# Consultas del dueño ("Mis consultas")
+# ---------------------------------------------------------------------
+
+# Hoy un Turno solo existe cuando alguien lo reservo (no hay estado
+# DISPONIBLE). Sigue "reservado" mientras esta PENDIENTE o EN_CURSO: es
+# el mismo criterio que usa obtener_turnos_disponibles para considerar
+# ocupado un horario.
+ESTADOS_RESERVADO = (Turno.Estado.PENDIENTE, Turno.Estado.EN_CURSO)
+
+
+def _turnos_de_dueno(dueno):
+    # select_related/prefetch_related: una consulta para los turnos y
+    # otra para sus pagos, en vez de una por turno (la base esta en la
+    # nube).
+    return (
+        Turno.objects.filter(mascota__dueno=dueno)
+        .select_related('mascota', 'veterinario')
+        .prefetch_related('pagos')
+    )
+
+
+def proximos_turnos(dueno):
+    """Turnos futuros reservados (PENDIENTE o EN_CURSO) de las mascotas
+    activas del dueño, del mas cercano al mas lejano. El personal de la
+    clinica (dueno None) no tiene turnos."""
+    if dueno is None:
+        return []
+    return list(
+        _turnos_de_dueno(dueno)
+        .filter(
+            mascota__activo=True,
+            fecha_hora__gte=timezone.now(),
+            estado__in=ESTADOS_RESERVADO,
+        )
+        .order_by('fecha_hora')
+    )
+
+
+def historial_turnos(dueno, limite=10):
+    """Los ultimos `limite` turnos del dueño que ya no son proximos: los
+    que ya pasaron y los finalizados o cancelados, del mas reciente al
+    mas viejo. Incluye los de mascotas dadas de baja."""
+    if dueno is None:
+        return []
+    return list(
+        _turnos_de_dueno(dueno)
+        .exclude(
+            fecha_hora__gte=timezone.now(),
+            estado__in=ESTADOS_RESERVADO,
+        )
+        .order_by('-fecha_hora')[:limite]
+    )
