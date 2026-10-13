@@ -6,9 +6,21 @@ class Veterinario(models.Model):
         ACTIVO = 'ACTIVO', 'Activo'
         INACTIVO = 'INACTIVO', 'Inactivo'
 
+    # Todos los veterinarios atienden perros y gatos: la especialidad no
+    # depende de la especie.
+    class Especialidad(models.TextChoices):
+        CLINICA_GENERAL = 'CLINICA_GENERAL', 'Clínica general'
+        CARDIOLOGIA = 'CARDIOLOGIA', 'Cardiología'
+        DERMATOLOGIA = 'DERMATOLOGIA', 'Dermatología'
+        TRAUMATOLOGIA = 'TRAUMATOLOGIA', 'Traumatología'
+        GASTROENTEROLOGIA = 'GASTROENTEROLOGIA', 'Gastroenterología'
+        OFTALMOLOGIA = 'OFTALMOLOGIA', 'Oftalmología'
+
     nombre = models.CharField(max_length=100)
     matricula = models.CharField(max_length=20, unique=True)
-    especialidad = models.CharField(max_length=100)
+    especialidad = models.CharField(
+        max_length=100, choices=Especialidad.choices,
+    )
     estado = models.CharField(
         max_length=20,
         choices=Estado.choices,

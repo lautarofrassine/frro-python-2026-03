@@ -4,6 +4,11 @@ import joblib
 import pandas as pd
 
 from atencion.ml.preparar_datos import FEATURES
+from clinica.services.mascotas import (
+    calcular_edad,
+    edad_en_anios,
+    obtener_mascota_de_dueno,
+)
 
 RUTA_MODELO = Path(__file__).resolve().parent.parent / 'ml' / \
     'modelo_triage.pkl'
@@ -130,3 +135,28 @@ def clasificar_urgencia(datos):
         'nivel_modelo': nivel_modelo,
         'regla_aplicada': regla_aplicada,
     }
+
+
+def evaluar_mascota(dueno, mascota_id, datos_sintomas):
+    """Clasifica la urgencia de una mascota del dueño. La edad y la
+    especie no se preguntan: salen de la mascota (edad calculada desde
+    su fecha de nacimiento).
+
+    `datos_sintomas` trae el resto de las features (sintomas, dias de
+    evolucion y temperatura).
+
+    Devuelve lo mismo que clasificar_urgencia mas 'mascota' y
+    'edad_texto' (la edad usada, para mostrarla).
+
+    Lanza MascotaNoEncontrada si la mascota no es del dueño o esta dada
+    de baja, y MascotaError si no tiene fecha de nacimiento.
+    """
+    mascota = obtener_mascota_de_dueno(dueno, mascota_id)
+    datos = dict(datos_sintomas)
+    datos['edad'] = edad_en_anios(mascota)
+    datos['es_perro'] = str(mascota.especie).lower()
+
+    resultado = clasificar_urgencia(datos)
+    resultado['mascota'] = mascota
+    resultado['edad_texto'] = calcular_edad(mascota)
+    return resultado

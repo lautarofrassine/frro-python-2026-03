@@ -45,33 +45,24 @@
                                     <i class="bi bi-balloon-heart text-success me-1"></i> {{ form.mascota.label }}
                                 </label>
                                 {{ form.mascota }}
+                                <div class="form-text">
+                                    La especie y la edad se toman de los
+                                    datos de tu mascota.
+                                </div>
                                 <div class="text-danger small">
                                     {{ form.mascota.errors }}
                                 </div>
+                                {% if mascota_a_completar %}
+                                    <a href="{% url 'clinica:mascota_editar' mascota_a_completar %}"
+                                       class="btn btn-sm btn-outline-brand mt-1">
+                                        <i class="bi bi-pencil me-1"></i>
+                                        Completar sus datos en Mis mascotas
+                                    </a>
+                                {% endif %}
                             </div>
 
                             <div class="row g-3 mb-4">
-                                <div class="col-md-4">
-                                    <label for="{{ form.especie.id_for_label }}"
-                                           class="form-label fw-semibold">
-                                        {{ form.especie.label }}
-                                    </label>
-                                    {{ form.especie }}
-                                    <div class="text-danger small">
-                                        {{ form.especie.errors }}
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="{{ form.edad.id_for_label }}"
-                                           class="form-label fw-semibold">
-                                        {{ form.edad.label }}
-                                    </label>
-                                    {{ form.edad }}
-                                    <div class="text-danger small">
-                                        {{ form.edad.errors }}
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <label for="{{ form.dias_evolucion.id_for_label }}"
                                            class="form-label fw-semibold">
                                         {{ form.dias_evolucion.label }}
@@ -81,7 +72,7 @@
                                         {{ form.dias_evolucion.errors }}
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <label for="{{ form.temperatura.id_for_label }}"
                                            class="form-label fw-semibold">
                                         {{ form.temperatura.label }}

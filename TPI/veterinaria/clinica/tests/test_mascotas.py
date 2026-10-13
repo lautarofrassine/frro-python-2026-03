@@ -13,6 +13,7 @@ from clinica.services.mascotas import (
     actualizar_mascota,
     calcular_edad,
     dar_de_baja_mascota,
+    edad_en_anios,
     listar_mascotas,
     obtener_mascota_de_dueno,
     registrar_mascota,
@@ -239,3 +240,39 @@ class CalcularEdadTests(SimpleTestCase):
 
     def test_recien_nacido(self, _hoy):
         self.assertEqual(self._edad(date(2026, 10, 1)), 'Menos de 1 mes')
+
+
+class EdadEnAniosTests(SimpleTestCase):
+    HOY = date(2026, 10, 14)
+
+    def _edad(self, nacimiento):
+        return edad_en_anios(
+            Mascota(nombre='Firulais', fecha_nacimiento=nacimiento), self.HOY,
+        )
+
+    def test_recien_nacido(self):
+        self.assertEqual(self._edad(date(2026, 10, 14)), 0)
+        self.assertEqual(self._edad(date(2026, 10, 1)), 0)
+
+    def test_seis_meses(self):
+        self.assertEqual(self._edad(date(2026, 4, 14)), 0.5)
+
+    def test_dos_anios_y_tres_meses(self):
+        self.assertEqual(self._edad(date(2024, 7, 14)), 2.25)
+
+    def test_redondea_a_dos_decimales(self):
+        # 6 años y 5 meses = 77 meses = 6.4166...
+        self.assertEqual(self._edad(date(2020, 5, 10)), 6.42)
+
+    def test_usa_la_fecha_de_hoy_si_no_se_indica(self):
+        with patch('clinica.services.mascotas._hoy', return_value=self.HOY):
+            edad = edad_en_anios(Mascota(fecha_nacimiento=date(2025, 10, 14)))
+
+        self.assertEqual(edad, 1)
+
+    def test_sin_fecha_de_nacimiento_da_un_error_claro(self):
+        with self.assertRaises(MascotaError) as ctx:
+            self._edad(None)
+
+        self.assertIn('fecha de nacimiento', str(ctx.exception))
+        self.assertEqual(ctx.exception.campo, 'fecha_nacimiento')

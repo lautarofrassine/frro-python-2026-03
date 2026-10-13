@@ -9,6 +9,15 @@
         <div class="row justify-content-center">
             <div class="col-lg-7">
 
+                {% if resultado.mascota %}
+                    <p class="text-center text-secondary mb-3">
+                        Evaluación de
+                        <strong>{{ resultado.mascota.nombre }}</strong>
+                        ({{ resultado.mascota.get_especie_display }},
+                        edad usada: {{ resultado.edad_texto }})
+                    </p>
+                {% endif %}
+
                 {% if resultado.nivel == 'BAJA' %}
                     <div class="card tarjeta-resultado-nivel bg-success
                                 bg-opacity-10 border border-success

@@ -31,7 +31,7 @@ class ConsultasBase(TestCase):
         )
         cls.veterinario = Veterinario.objects.create(
             nombre='Dra. Laura Gómez', matricula='MP-0001',
-            especialidad='Clínica General',
+            especialidad='CLINICA_GENERAL',
         )
         cls.urgencia = NivelUrgencia.objects.create(
             sintomas_descripcion='-', nivel_urgencia='BAJA',
@@ -155,7 +155,7 @@ class ConsultasViewTests(ConsultasBase):
         self.assertContains(response, 'Firulais')
         self.assertContains(response, 'fa-dog')
         self.assertContains(response, 'Dra. Laura Gómez')
-        self.assertContains(response, 'Clínica General')
+        self.assertContains(response, 'Clínica general')
         self.assertContains(response, 'Pago: Pendiente')
         self.assertNotContains(response, 'Michi')
         self.assertNotContains(response, 'Hoy</span>')

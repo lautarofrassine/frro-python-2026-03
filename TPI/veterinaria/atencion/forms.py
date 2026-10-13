@@ -1,6 +1,7 @@
 from django import forms
 
 from atencion.ml.preparar_datos import FEATURES
+from clinica.services.mascotas import MascotaError, calcular_edad
 
 # Temperatura corporal normal aproximada de un perro/gato sano, en °C.
 # Se usa cuando el dueño no sabe/no midio la temperatura de la mascota.
@@ -12,6 +13,15 @@ CAMPOS_SINTOMAS = [
 ]
 
 
+def _etiqueta(mascota):
+    """Texto de la opcion del select: 'Firulais (Perro, 3 años)'."""
+    try:
+        edad = calcular_edad(mascota)
+    except MascotaError:
+        edad = 'sin fecha de nacimiento'
+    return f'{mascota.nombre} ({mascota.get_especie_display()}, {edad})'
+
+
 class TriageForm(forms.Form):
     # Las opciones se cargan en __init__ con las mascotas del dueño, que
     # la vista obtiene del service: el form no consulta modelos.
@@ -21,17 +31,8 @@ class TriageForm(forms.Form):
         label='¿A qué mascota vamos a evaluar?',
         widget=forms.Select(attrs={'class': 'form-select mb-3'}),
     )
-    especie = forms.ChoiceField(
-        choices=[('perro', 'Perro'), ('gato', 'Gato')],
-        label='Especie',
-        widget=forms.Select(attrs={'class': 'form-select'}),
-    )
-    edad = forms.IntegerField(
-        label='Edad (en años)',
-        min_value=0,
-        max_value=30,
-        widget=forms.NumberInput(attrs={'class': 'form-control'}),
-    )
+    # La especie y la edad no se preguntan: salen de la mascota elegida
+    # (atencion.services.triage.evaluar_mascota).
     dias_evolucion = forms.IntegerField(
         label='¿Hace cuántos días empezaron los síntomas?',
         min_value=1,
@@ -95,7 +96,7 @@ class TriageForm(forms.Form):
 
         self.fields['mascota'].choices = (
             [('', '-- Seleccioná tu mascota --')]
-            + [(mascota.pk, mascota.nombre) for mascota in mascotas]
+            + [(mascota.pk, _etiqueta(mascota)) for mascota in mascotas]
         )
 
         for campo in CAMPOS_SINTOMAS:
@@ -108,19 +109,18 @@ class TriageForm(forms.Form):
         return [self[campo] for campo in CAMPOS_SINTOMAS]
 
     def a_datos_triage(self):
-        """Convierte cleaned_data al dict que espera
-        atencion.services.triage.clasificar_urgencia.
+        """Convierte cleaned_data a los datos de sintomas que espera
+        atencion.services.triage.evaluar_mascota (que les suma la edad y
+        la especie de la mascota).
 
         Solo traduce nombres/formatos de campos del formulario a las
-        features del modelo (por ej. especie -> es_perro, temperatura
-        vacia -> TEMPERATURA_POR_DEFECTO); no aplica ninguna regla de
-        negocio, eso es responsabilidad del service.
+        features del modelo (por ej. temperatura vacia ->
+        TEMPERATURA_POR_DEFECTO); no aplica ninguna regla de negocio,
+        eso es responsabilidad del service.
         """
         datos = {
             campo: self.cleaned_data[campo] for campo in CAMPOS_SINTOMAS
         }
-        datos['es_perro'] = self.cleaned_data['especie']
-        datos['edad'] = self.cleaned_data['edad']
         datos['dias_evolucion'] = self.cleaned_data['dias_evolucion']
 
         temperatura = self.cleaned_data.get('temperatura')

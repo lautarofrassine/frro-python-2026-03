@@ -1,9 +1,10 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.http import Http404
 
 from atencion.forms import TriageForm
-from atencion.services.triage import clasificar_urgencia
+from atencion.services.triage import evaluar_mascota
 from atencion.services.turnos import (
     asignar_turno_automatico,
     crear_turno_manual,
@@ -11,7 +12,11 @@ from atencion.services.turnos import (
     obtener_turnos_disponibles,
     proximos_turnos,
 )
-from clinica.services.mascotas import listar_mascotas
+from clinica.services.mascotas import (
+    MascotaError,
+    MascotaNoEncontrada,
+    listar_mascotas,
+)
 from clinica.services.usuarios import obtener_dueno_de_usuario
 
 
@@ -32,7 +37,11 @@ def triage_view(request):
     # 1. VALIDACIÓN DE MASCOTAS
     # Regla de capas: las mascotas se piden al service, la vista no
     # consulta modelos. Solo se listan las activas del dueño logueado.
-    mascotas = listar_mascotas(obtener_dueno_de_usuario(request.user))
+    dueno = obtener_dueno_de_usuario(request.user)
+    mascotas = listar_mascotas(dueno)
+    # Si la mascota elegida no tiene fecha de nacimiento, la plantilla
+    # muestra el link para completarla.
+    mascota_a_completar = None
 
     if not mascotas:
         messages.warning(
@@ -48,15 +57,26 @@ def triage_view(request):
         form = TriageForm(request.POST, mascotas=mascotas)
 
         if form.is_valid():
-            datos = form.a_datos_triage()
-            resultado = clasificar_urgencia(datos)
-
-            # Extraemos la mascota y el nivel
             mascota_id = form.cleaned_data['mascota']
-            nivel_str = resultado['nivel']
+            try:
+                # La edad y la especie las pone el service a partir de
+                # la mascota; la vista no calcula nada.
+                resultado = evaluar_mascota(
+                    dueno, mascota_id, form.a_datos_triage(),
+                )
+            except MascotaNoEncontrada:
+                raise Http404('Mascota no encontrada.')
+            except MascotaError as error:
+                form.add_error('mascota', str(error))
+                mascota_a_completar = mascota_id
+                resultado = None
+
+            nivel_str = resultado['nivel'] if resultado else None
             tipo_consulta = "Triage"
 
-            if nivel_str == 'CRITICA':
+            if resultado is None:
+                pass
+            elif nivel_str == 'CRITICA':
                 try:
                     turno_asignado = asignar_turno_automatico(
                         mascota_id, nivel_str, tipo_consulta,
@@ -87,7 +107,10 @@ def triage_view(request):
         # En el GET también hay que pasarle las mascotas para el select
         form = TriageForm(mascotas=mascotas)
 
-    return render(request, 'atencion/triage_form.html', {'form': form})
+    return render(request, 'atencion/triage_form.html', {
+        'form': form,
+        'mascota_a_completar': mascota_a_completar,
+    })
 
 
 @login_required

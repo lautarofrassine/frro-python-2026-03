@@ -147,17 +147,35 @@ def dar_de_baja_mascota(dueno, mascota_id):
     return mascota
 
 
-def calcular_edad(mascota):
-    """Edad en texto: '3 años', '8 meses', '1 año y 2 meses' o 'Menos de
-    1 mes'."""
-    hoy = _hoy()
+def _meses_de_edad(mascota, hoy=None):
+    """Meses cumplidos de la mascota. Lanza MascotaError si no tiene
+    fecha de nacimiento cargada."""
     nacimiento = mascota.fecha_nacimiento
+    if nacimiento is None:
+        raise MascotaError(
+            f'{mascota.nombre} no tiene fecha de nacimiento cargada. '
+            'Completala en "Mis mascotas" para poder calcular su edad.',
+            'fecha_nacimiento',
+        )
+    hoy = hoy or _hoy()
     meses_totales = (
         (hoy.year - nacimiento.year) * 12 + (hoy.month - nacimiento.month)
     )
     if hoy.day < nacimiento.day:
         meses_totales -= 1
-    anios, meses = divmod(max(meses_totales, 0), 12)
+    return max(meses_totales, 0)
+
+
+def edad_en_anios(mascota, hoy=None):
+    """Edad como numero decimal en años, redondeada a 2 decimales
+    (6 meses -> 0.5, 2 años y 3 meses -> 2.25). La usa el triage."""
+    return round(_meses_de_edad(mascota, hoy) / 12, 2)
+
+
+def calcular_edad(mascota):
+    """Edad en texto: '3 años', '8 meses', '1 año y 2 meses' o 'Menos de
+    1 mes'."""
+    anios, meses = divmod(_meses_de_edad(mascota), 12)
 
     texto_anios = f'{anios} año' if anios == 1 else f'{anios} años'
     texto_meses = f'{meses} mes' if meses == 1 else f'{meses} meses'
