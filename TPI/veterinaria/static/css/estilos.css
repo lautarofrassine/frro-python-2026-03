@@ -32,12 +32,21 @@ a {
     height: 42px;
     min-width: 42px;
     border-radius: 50%;
-    background-color: var(--verde-principal);
-    color: #ffffff;
-    font-weight: 700;
+    background-color: #e6f4ee;
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.logo-circulo img {
+    width: 62%;
+    height: 62%;
+}
+
+.logo-circulo.chico {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
 }
 
 .nav-link {

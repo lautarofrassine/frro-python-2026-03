@@ -6,6 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block titulo %}ClinicaVet24 - Clínica Veterinaria{% endblock %}</title>
 
+    <link rel="icon" href="{% static 'img/patita.svg' %}" type="image/svg+xml">
+    {# Para navegadores que no soportan favicon SVG. #}
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" sizes="any">
+    <link rel="apple-touch-icon" href="{% static 'img/patita-180.png' %}">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -42,7 +47,9 @@
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2"
                href="{% url 'core:inicio' %}">
-                <span class="logo-circulo">CV</span>
+                <span class="logo-circulo">
+                    <img src="{% static 'img/patita.svg' %}" alt="ClinicaVet24">
+                </span>
                 <span class="lh-1">
                     <span class="d-block fw-bold fs-5">ClinicaVet24</span>
                     <span class="d-block small text-muted">
@@ -172,7 +179,14 @@
 
     <footer class="footer-clinica mt-5 py-4">
         <div class="container text-center small">
-            <div class="fw-bold fs-6">ClinicaVet24</div>
+            <div class="fw-bold fs-6 d-flex justify-content-center
+                        align-items-center gap-2">
+                {# La patita es verde oscuro como el footer: va sobre un circulo claro. #}
+                <span class="logo-circulo chico">
+                    <img src="{% static 'img/patita.svg' %}" alt="">
+                </span>
+                ClinicaVet24
+            </div>
             <div>Av. Siempre Viva 1234, Rosario, Santa Fe</div>
             <div>Atención las 24 hs, todos los días</div>
             <div class="mt-2 opacity-75">

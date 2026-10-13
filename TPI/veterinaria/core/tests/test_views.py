@@ -27,3 +27,22 @@ class InicioViewTests(SimpleTestCase):
         )
         self.assertContains(response, reverse('clinica:mascotas'))
         self.assertNotContains(response, 'Cirugías')
+
+    def test_logo_y_favicon_de_la_patita(self):
+        response = self.client.get(reverse('core:inicio'))
+
+        self.assertContains(
+            response,
+            '<link rel="icon" href="/static/img/patita.svg" '
+            'type="image/svg+xml">',
+        )
+        self.assertContains(
+            response, '<link rel="icon" href="/static/img/favicon.ico"',
+        )
+        self.assertContains(
+            response,
+            '<link rel="apple-touch-icon" href="/static/img/patita-180.png">',
+        )
+        self.assertContains(
+            response, '<img src="/static/img/patita.svg" alt="ClinicaVet24">',
+        )
