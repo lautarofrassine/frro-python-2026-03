@@ -90,6 +90,12 @@
                                             {% endif %}
                                         {% endwith %}
                                     </div>
+                                    {% if turno|se_puede_cancelar %}
+                                        <a href="{% url 'atencion:turno_cancelar' turno.pk %}"
+                                           class="btn btn-outline-danger btn-sm mt-3">
+                                            <i class="bi bi-x-circle me-1"></i>Cancelar turno
+                                        </a>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

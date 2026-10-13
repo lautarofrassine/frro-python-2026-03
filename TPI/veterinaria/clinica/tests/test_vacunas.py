@@ -162,6 +162,10 @@ class ReservarVacunaTests(VacunasBase):
             horario['fecha_hora'],
             [h['fecha_hora'] for h in horarios_libres_vacunacion()],
         )
+        # La reserva pasa por reservar_turno, que crea el pago.
+        pago = turno.pagos.get()
+        self.assertEqual(pago.estado, 'PENDIENTE')
+        self.assertEqual(pago.monto_total, 12000)
 
     def test_un_gato_no_puede_reservar_una_vacuna_de_perro(self):
         horario = horarios_libres_vacunacion()[0]
@@ -219,8 +223,12 @@ class CalendarioServiceTests(VacunasBase):
         self.crear_turno(
             self.luna, dia_20 + timedelta(days=30), self.triple_felina,
         )
-        self.crear_turno(self.firulais, dia_20, self.sextuple)
-        self.crear_turno(self.michi, dia_20, self.triple_felina)
+        self.crear_turno(
+            self.firulais, dia_20 + timedelta(minutes=30), self.sextuple,
+        )
+        self.crear_turno(
+            self.michi, dia_20 + timedelta(hours=1), self.triple_felina,
+        )
         self.crear_turno(self.luna, dia_20 + timedelta(days=1))
         self.crear_turno(
             self.luna, dia_20 + timedelta(days=2), self.triple_felina,
@@ -312,8 +320,12 @@ class VacunasViewsTests(VacunasBase):
         self.crear_turno(
             self.luna, dia_20 + timedelta(days=30), self.triple_felina,
         )
-        self.crear_turno(self.firulais, dia_20, self.sextuple)
-        self.crear_turno(self.michi, dia_20, self.triple_felina)
+        self.crear_turno(
+            self.firulais, dia_20 + timedelta(minutes=30), self.sextuple,
+        )
+        self.crear_turno(
+            self.michi, dia_20 + timedelta(hours=1), self.triple_felina,
+        )
         self.crear_turno(self.luna, dia_20 + timedelta(days=1))
 
         response = self.client.get(
@@ -365,7 +377,7 @@ class VacunasViewsTests(VacunasBase):
         self.assertContains(response, 'Todavía no registraste mascotas')
         self.assertContains(response, reverse('clinica:mascota_nueva'))
 
-    def test_detalle_muestra_el_turno_sin_boton_cancelar(self):
+    def test_detalle_muestra_el_turno_con_boton_cancelar(self):
         turno = self.crear_turno(
             self.luna, datetime(2026, 10, 20, 15, 0, tzinfo=ZONA),
             self.triple_felina,
@@ -384,7 +396,40 @@ class VacunasViewsTests(VacunasBase):
         self.assertContains(response, 'Pendiente')
         self.assertContains(response, 'Sin pago registrado')
         self.assertContains(response, 'mes=2026-10')
-        self.assertNotContains(response, 'Cancelar')
+        self.assertContains(
+            response, reverse('atencion:turno_cancelar', args=[turno.pk]),
+        )
+
+    def test_cancelar_desde_el_detalle_vuelve_al_calendario(self):
+        horario = horarios_libres_vacunacion()[-1]
+        turno = reservar_turno_vacuna(
+            self.ana, self.luna.pk, self.triple_felina.pk,
+            horario['veterinario_id'], horario['fecha_hora'],
+        )
+        detalle = self.client.get(
+            reverse('clinica:vacuna_turno', args=[turno.pk]),
+        )
+        link = html.unescape(re.search(
+            r'href="([^"]*/cancelar/[^"]*)"', detalle.content.decode(),
+        ).group(1))
+
+        confirmacion = self.client.get(link)
+        response = self.client.post(
+            reverse('atencion:turno_cancelar', args=[turno.pk]),
+            {'siguiente': confirmacion.context['siguiente']},
+            follow=True,
+        )
+
+        self.assertContains(confirmacion, 'Triple felina')
+        self.assertRedirects(
+            response,
+            f"{reverse('clinica:vacunas')}?mascota={self.luna.pk}"
+            '&mes=2026-10',
+        )
+        self.assertContains(response, 'Se canceló el turno de Luna.')
+        self.assertEqual(response.context['calendario']['turnos'], [])
+        turno.refresh_from_db()
+        self.assertEqual(turno.estado, 'CANCELADO')
 
     def test_detalle_de_turno_de_otro_dueno_da_404(self):
         turno = self.crear_turno(
@@ -499,7 +544,7 @@ class VacunasViewsTests(VacunasBase):
             follow=True,
         )
 
-        self.assertContains(response, 'ya no está disponible')
+        self.assertContains(response, 'acaba de ser reservado')
         self.assertEqual(Turno.objects.count(), 1)
 
     def test_navegacion_hacia_vacunas(self):

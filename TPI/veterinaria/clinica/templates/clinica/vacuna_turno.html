@@ -55,6 +55,13 @@
                             <i class="bi bi-arrow-left me-1"></i>
                             Volver al calendario
                         </a>
+                        {% if turno|se_puede_cancelar %}
+                            {% url 'clinica:vacunas' as url_calendario %}
+                            <a href="{% url 'atencion:turno_cancelar' turno.pk %}?siguiente={{ url_calendario|urlencode:'' }}%3Fmascota%3D{{ turno.mascota.pk }}%26mes%3D{{ mes }}"
+                               class="btn btn-outline-danger ms-2">
+                                <i class="bi bi-x-circle me-1"></i>Cancelar turno
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>

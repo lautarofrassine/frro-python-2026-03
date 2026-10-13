@@ -47,8 +47,13 @@ class Pago(models.Model):
         related_name='pagos',
     )
     monto_total = models.DecimalField(max_digits=10, decimal_places=2)
-    monto_cubierto_os = models.DecimalField(max_digits=10, decimal_places=2)
-    metodo = models.CharField(max_length=20, choices=Metodo.choices)
+    monto_cubierto_os = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+    )
+    # Vacio mientras el pago esta pendiente: todavia no se eligio.
+    metodo = models.CharField(
+        max_length=20, choices=Metodo.choices, blank=True,
+    )
     estado = models.CharField(
         max_length=20,
         choices=Estado.choices,

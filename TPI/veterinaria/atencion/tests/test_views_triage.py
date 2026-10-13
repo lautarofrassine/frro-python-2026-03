@@ -53,7 +53,7 @@ class TriageSinMascotasTests(TestCase):
         self.assertRedirects(response, reverse('clinica:mascota_nueva'))
 
 
-@patch('atencion.views.obtener_turnos_disponibles', return_value=[])
+@patch('atencion.views.turnos_disponibles', return_value=[])
 @patch('clinica.services.mascotas._hoy', return_value=HOY)
 class TriageViewTests(TestCase):
 

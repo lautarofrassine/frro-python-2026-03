@@ -33,6 +33,12 @@ class ConsultasBase(TestCase):
             nombre='Dra. Laura Gómez', matricula='MP-0001',
             especialidad='CLINICA_GENERAL',
         )
+        # Un veterinario no puede tener dos turnos a la misma hora: los
+        # turnos del otro dueño van con otro veterinario.
+        cls.otro_veterinario = Veterinario.objects.create(
+            nombre='Dr. Martín Sosa', matricula='MP-0002',
+            especialidad='CARDIOLOGIA',
+        )
         cls.urgencia = NivelUrgencia.objects.create(
             sintomas_descripcion='-', nivel_urgencia='BAJA',
         )
@@ -45,7 +51,10 @@ class ConsultasBase(TestCase):
     def crear_turno(self, mascota, delta, estado=Turno.Estado.PENDIENTE):
         return Turno.objects.create(
             mascota=mascota,
-            veterinario=self.veterinario,
+            veterinario=(
+                self.otro_veterinario if mascota == self.michi
+                else self.veterinario
+            ),
             nivel_urgencia=self.urgencia,
             fecha_hora=AHORA + delta,
             tipo='Consulta Regular',
@@ -159,7 +168,9 @@ class ConsultasViewTests(ConsultasBase):
         self.assertContains(response, 'Pago: Pendiente')
         self.assertNotContains(response, 'Michi')
         self.assertNotContains(response, 'Hoy</span>')
-        self.assertNotContains(response, 'Cancelar')
+        self.assertContains(
+            response, reverse('atencion:turno_cancelar', args=[turno.pk]),
+        )
 
     def test_turno_de_hoy_lleva_el_badge_hoy(self):
         self.crear_turno(self.firulais, timedelta(hours=3))

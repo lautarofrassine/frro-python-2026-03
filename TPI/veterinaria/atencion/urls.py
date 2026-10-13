@@ -7,5 +7,14 @@ app_name = 'atencion'
 urlpatterns = [
     path('consultas/', views.consultas_view, name='consultas'),
     path('triage/', views.triage_view, name='triage'),
-    path('confirmar-turno/', views.confirmar_turno_seleccionado_view, name='confirmar_turno'),
+    path(
+        'confirmar-turno/',
+        views.confirmar_turno_seleccionado_view,
+        name='confirmar_turno',
+    ),
+    path(
+        'turnos/<int:turno_id>/cancelar/',
+        views.turno_cancelar_view,
+        name='turno_cancelar',
+    ),
 ]

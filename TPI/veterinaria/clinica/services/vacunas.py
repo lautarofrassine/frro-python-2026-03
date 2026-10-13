@@ -2,27 +2,20 @@ import calendar
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 
-from django.core.exceptions import (
-    MultipleObjectsReturned,
-    ObjectDoesNotExist,
-)
 from django.db import transaction
 from django.utils import timezone
 
 from atencion.models import Turno, Veterinario
 from atencion.services.turnos import (
-    crear_turno_manual,
-    turnos_disponibles_por_especialidad,
+    TurnoError,
+    reservar_turno,
+    turnos_disponibles,
 )
 from clinica.models import Mascota, Vacuna
 from clinica.services.mascotas import obtener_mascota_de_dueno
 
-# Un turno de vacunacion es un turno comun (lo crea la funcion de
-# reserva existente, crear_turno_manual) marcado con la vacuna.
-TIPO_TURNO_VACUNACION = 'Vacunación'
-# El turno exige un nivel de urgencia; una vacuna es una visita
-# programada, no una urgencia.
-NIVEL_URGENCIA_VACUNACION = 'BAJA'
+# Un turno de vacunacion es un turno comun (lo reserva
+# atencion.services.turnos.reservar_turno) marcado con la vacuna.
 # Con cuantos dias de anticipacion se puede reservar.
 DIAS_ADELANTE = 14
 
@@ -116,8 +109,9 @@ def obtener_vacuna_para_mascota(mascota, vacuna_id):
 
 
 def _horarios_de_vacunacion():
-    return turnos_disponibles_por_especialidad(
-        Veterinario.Especialidad.VACUNACION, DIAS_ADELANTE,
+    return turnos_disponibles(
+        especialidad=Veterinario.Especialidad.VACUNACION,
+        hasta=timezone.now() + timedelta(days=DIAS_ADELANTE),
     )
 
 
@@ -138,8 +132,10 @@ def horarios_libres_vacunacion(limite=10):
 
 
 def obtener_horario_libre(veterinario_id, fecha_hora):
-    """Devuelve el horario (dict del service de turnos) si sigue libre
-    para ese veterinario de VACUNACION. Si no, lanza VacunaError."""
+    """Para la pantalla de confirmacion: devuelve el horario (dict del
+    service de turnos) si sigue libre para ese veterinario de
+    VACUNACION. Si no, lanza VacunaError. La validacion definitiva la
+    hace reservar_turno al reservar."""
     try:
         veterinario_id = int(veterinario_id)
         if isinstance(fecha_hora, str):
@@ -160,34 +156,33 @@ def reservar_turno_vacuna(dueno, mascota_id, vacuna_id, veterinario_id,
                           fecha_hora):
     """Reserva un turno de vacunacion para una mascota del dueño.
 
-    Valida que la mascota sea del dueño y este activa
-    (MascotaNoEncontrada), que la vacuna sea de su especie y que el
-    horario siga libre con un veterinario de VACUNACION (VacunaError).
-    El turno lo crea la funcion de reserva existente
-    (crear_turno_manual) y despues se marca con la vacuna.
+    Aca solo van las reglas propias de las vacunas: que la vacuna sea
+    de la especie de la mascota y que el veterinario sea de VACUNACION.
+    La reserva en si (mascota del dueño, horario libre y dentro del
+    horario de atencion, pago) la hace reservar_turno, marcando el turno
+    con la vacuna.
+
+    Lanza MascotaNoEncontrada si la mascota no es del dueño y
+    VacunaError ante cualquier otra regla violada.
     """
     mascota = obtener_mascota_de_dueno(dueno, mascota_id)
     vacuna = obtener_vacuna_para_mascota(mascota, vacuna_id)
-    horario = obtener_horario_libre(veterinario_id, fecha_hora)
+    try:
+        aplica_vacunas = Veterinario.objects.filter(
+            pk=veterinario_id,
+            especialidad=Veterinario.Especialidad.VACUNACION,
+        ).exists()
+    except (TypeError, ValueError):
+        aplica_vacunas = False
+    if not aplica_vacunas:
+        raise VacunaError('El veterinario elegido no aplica vacunas.')
 
     try:
-        with transaction.atomic():
-            turno = crear_turno_manual(
-                mascota_id=mascota.pk,
-                nivel_urgencia_str=NIVEL_URGENCIA_VACUNACION,
-                tipo=TIPO_TURNO_VACUNACION,
-                veterinario_id=horario['veterinario_id'],
-                fecha_hora=horario['fecha_hora'],
-            )
-            turno.vacuna = vacuna
-            turno.save(update_fields=['vacuna'])
-    except (ObjectDoesNotExist, MultipleObjectsReturned):
-        # crear_turno_manual busca el NivelUrgencia por su nivel.
-        raise VacunaError(
-            'No se pudo reservar el turno: falta configurar el nivel de '
-            f'urgencia {NIVEL_URGENCIA_VACUNACION} en la clínica.'
+        return reservar_turno(
+            dueno, mascota.pk, veterinario_id, fecha_hora, vacuna=vacuna,
         )
-    return turno
+    except TurnoError as error:
+        raise VacunaError(str(error))
 
 
 # ---------------------------------------------------------------------

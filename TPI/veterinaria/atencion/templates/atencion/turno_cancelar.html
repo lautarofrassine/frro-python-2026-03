@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block titulo %}Cancelar turno - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card tarjeta-triage">
+                    <div class="card-body p-4 p-md-5 text-center">
+                        <i class="bi bi-calendar2-x text-danger fs-1 d-block mb-3"></i>
+                        <h1 class="h4">
+                            ¿Seguro que querés cancelar el turno de
+                            {{ turno.mascota.nombre }}?
+                        </h1>
+                        <p class="text-secondary mb-1">
+                            {{ turno.fecha_hora|date:"l j \d\e F"|capfirst }}
+                            a las {{ turno.fecha_hora|date:"H:i" }} hs
+                            con {{ turno.veterinario.nombre }}
+                        </p>
+                        {% if turno.vacuna %}
+                            <p class="text-secondary mb-1">
+                                Vacuna: {{ turno.vacuna.nombre }}
+                            </p>
+                        {% endif %}
+                        <p class="text-secondary small">
+                            El horario queda libre para otra mascota.
+                        </p>
+                        <form method="post"
+                              class="d-flex flex-column flex-sm-row gap-2 justify-content-center mt-4">
+                            {% csrf_token %}
+                            <input type="hidden" name="siguiente" value="{{ siguiente }}">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                Sí, cancelar turno
+                            </button>
+                            <a href="{{ siguiente }}"
+                               class="btn btn-outline-secondary btn-lg">
+                                Volver
+                            </a>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

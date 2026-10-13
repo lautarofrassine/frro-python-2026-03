@@ -1,6 +1,8 @@
 from django import template
 from django.utils import timezone
 
+from atencion.services.turnos import puede_cancelarse
+
 register = template.Library()
 
 
@@ -10,6 +12,12 @@ def ultimo_pago(turno):
     pagos ya precargados por el service (no hace otra consulta)."""
     pagos = sorted(turno.pagos.all(), key=lambda pago: pago.pk)
     return pagos[-1] if pagos else None
+
+
+@register.filter
+def se_puede_cancelar(turno):
+    """True si el dueño todavia puede cancelar el turno."""
+    return puede_cancelarse(turno)
 
 
 @register.filter
