@@ -1,3 +1,5 @@
+import re
+
 from django.test import SimpleTestCase
 from django.urls import reverse
 
@@ -17,12 +19,48 @@ class InicioViewTests(SimpleTestCase):
     def test_el_hero_tiene_el_boton_urgencia_y_ya_no_contactanos(self):
         response = self.client.get(reverse('core:inicio'))
 
-        self.assertContains(response, 'btn btn-outline-urgencia btn-lg')
+        self.assertContains(response, 'id="boton-urgencia"')
         self.assertContains(response, 'bi-exclamation-triangle-fill')
+        self.assertContains(response, 'icono-urgencia')
         self.assertNotContains(response, 'Contactanos')
-        # El boton del hero y la tarjeta "Urgencias 24 hs".
-        self.assertContains(
-            response, f'href="{reverse("atencion:urgencia")}"', count=2,
+
+    def test_el_boton_urgencia_usa_las_mismas_clases_que_sacar_turno(self):
+        contenido = self.client.get(reverse('core:inicio')).content.decode()
+
+        sacar_turno = re.search(
+            r'<a href="/atencion/turnos/nuevo/"\s+class="([^"]*)"', contenido,
+        ).group(1)
+        urgencia = re.search(
+            r'<a href="[^"]*"\s+class="([^"]*)" id="boton-urgencia"',
+            contenido,
+        ).group(1)
+
+        self.assertEqual(urgencia, sacar_turno)
+        self.assertEqual(urgencia, 'btn btn-brand btn-lg')
+
+    def test_la_tarjeta_urgencias_y_el_boton_van_a_la_misma_url(self):
+        contenido = self.client.get(reverse('core:inicio')).content.decode()
+
+        boton = re.search(
+            r'<a href="([^"]*)"[^>]*id="boton-urgencia"', contenido,
+        ).group(1)
+        tarjeta = re.search(
+            r'<a href="([^"]*)"\s+id="tarjeta-urgencias"\s+class="([^"]*)"',
+            contenido,
+        )
+
+        self.assertEqual(tarjeta.group(1), boton)
+        self.assertEqual(boton, reverse('atencion:urgencia'))
+        # stretched-link: toda la tarjeta es clickeable.
+        self.assertIn('stretched-link', tarjeta.group(2))
+        self.assertIn('Urgencias 24 hs', contenido)
+
+    def test_el_css_se_carga_con_version_para_evitar_la_cache(self):
+        response = self.client.get(reverse('core:inicio'))
+
+        self.assertRegex(
+            response.content.decode(),
+            r'href="/static/css/estilos\.css\?v=\d+" rel="stylesheet"',
         )
 
     def test_los_datos_de_la_clinica_salen_de_la_configuracion_central(self):

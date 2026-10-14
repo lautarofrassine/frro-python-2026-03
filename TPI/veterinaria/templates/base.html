@@ -1,4 +1,4 @@
-{% load static %}
+{% load static core_extras %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -27,7 +27,8 @@
     <link
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
         rel="stylesheet">
-    <link href="{% static 'css/estilos.css' %}" rel="stylesheet">
+    {# Con version, para que el navegador no use un CSS viejo en cache. #}
+    <link href="{% static_con_version 'css/estilos.css' %}" rel="stylesheet">
 
     {% block extra_head %}{% endblock %}
 </head>

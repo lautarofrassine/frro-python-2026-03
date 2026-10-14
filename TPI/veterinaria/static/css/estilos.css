@@ -441,3 +441,19 @@ a {
     border-color: var(--verde-principal);
     background-color: var(--fondo-hero);
 }
+
+/* Icono de advertencia rojo dentro de un boton verde: va sobre un
+   circulo blanco porque rojo sobre verde casi no se distingue. */
+.icono-urgencia {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5em;
+    height: 1.5em;
+    margin-right: 0.35rem;
+    border-radius: 50%;
+    background-color: #ffffff;
+    color: #dc2626;
+    font-size: 0.85em;
+    vertical-align: middle;
+}

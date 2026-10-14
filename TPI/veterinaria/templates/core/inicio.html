@@ -23,9 +23,12 @@
                        class="btn btn-brand btn-lg">
                         Sacar turno
                     </a>
+                    {# Mismas clases que "Sacar turno"; solo cambian el texto y el icono. #}
                     <a href="{% url 'atencion:urgencia' %}"
-                       class="btn btn-outline-urgencia btn-lg">
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                       class="btn btn-brand btn-lg" id="boton-urgencia">
+                        <span class="icono-urgencia">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        </span>
                         Urgencia
                     </a>
                 </div>
@@ -138,6 +141,7 @@
                     </div>
                     <h3 class="h5">
                         <a href="{% url 'atencion:urgencia' %}"
+                           id="tarjeta-urgencias"
                            class="stretched-link text-reset text-decoration-none">
                             Urgencias 24 hs
                         </a>
