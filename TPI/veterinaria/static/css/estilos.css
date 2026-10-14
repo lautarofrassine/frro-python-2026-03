@@ -426,3 +426,18 @@ a {
     font-weight: 700;
     margin-bottom: 0.5rem;
 }
+
+/* Tarjeta que se elige con un click (ej. la vacuna): al pasar el mouse
+   se resalta. El borde transparente del estado normal reserva el
+   espacio, asi el contenido no se mueve al resaltar. */
+.tarjeta-mascota.tarjeta-seleccionable {
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.tarjeta-mascota.tarjeta-seleccionable:hover,
+.tarjeta-mascota.tarjeta-seleccionable:focus-within {
+    border-color: var(--verde-principal);
+    background-color: var(--fondo-hero);
+}

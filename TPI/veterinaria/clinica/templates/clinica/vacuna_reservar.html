@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load mascotas_extras %}
 
-{% block titulo %}Reservar vacuna - ClinicaVet24{% endblock %}
+{% block titulo %}Turno de vacunación - ClinicaVet24{% endblock %}
 {% block body_class %}fondo-verde-claro{% endblock %}
 
 {% block contenido %}
@@ -11,7 +11,7 @@
             <div class="col-lg-8">
                 <h1 class="h3 mb-2">
                     <i class="fa-solid fa-syringe text-success me-2"></i>
-                    Reservar vacuna para {{ mascota.nombre }}
+                    Turno de vacunación para {{ mascota.nombre }}
                 </h1>
                 <p class="text-secondary mb-4">
                     <span class="{% if paso == 1 %}fw-bold text-success{% endif %}">1 Vacuna</span>
@@ -24,7 +24,7 @@
                         <div class="row row-cols-1 row-cols-md-2 g-3">
                             {% for vacuna in vacunas %}
                                 <div class="col">
-                                    <div class="card tarjeta-mascota position-relative">
+                                    <div class="card tarjeta-mascota tarjeta-seleccionable position-relative">
                                         <div class="card-body p-4">
                                             <h2 class="h5">
                                                 <a href="{% url 'clinica:vacuna_reservar' %}?mascota={{ mascota.pk }}&vacuna={{ vacuna.pk }}"

@@ -356,6 +356,8 @@ class VacunasViewsTests(VacunasBase):
         )
         self.assertTrue(self._dia(response, date(2026, 10, 14))['es_hoy'])
         self.assertContains(response, 'No hay vacunas reservadas este mes')
+        self.assertContains(response, 'Sacar turno para vacunación')
+        self.assertNotContains(response, 'Reservar vacuna')
         self.assertContains(response, 'Firulais')
         self.assertContains(response, 'Luna')
         self.assertNotContains(response, 'Michi')
@@ -447,6 +449,9 @@ class VacunasViewsTests(VacunasBase):
             reverse('clinica:vacuna_reservar'), {'mascota': self.luna.pk},
         )
 
+        self.assertContains(response, 'Turno de vacunación para Luna')
+        self.assertNotContains(response, 'Reservar vacuna')
+        self.assertContains(response, 'tarjeta-seleccionable')
         self.assertContains(response, 'Triple felina')
         self.assertContains(response, 'Leucemia felina')
         self.assertNotContains(response, 'Séxtuple')

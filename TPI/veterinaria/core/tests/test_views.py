@@ -17,7 +17,7 @@ class InicioViewTests(SimpleTestCase):
     def test_el_hero_tiene_el_boton_urgencia_y_ya_no_contactanos(self):
         response = self.client.get(reverse('core:inicio'))
 
-        self.assertContains(response, 'btn btn-urgencia btn-lg')
+        self.assertContains(response, 'btn btn-outline-urgencia btn-lg')
         self.assertContains(response, 'bi-exclamation-triangle-fill')
         self.assertNotContains(response, 'Contactanos')
         # El boton del hero y la tarjeta "Urgencias 24 hs".
