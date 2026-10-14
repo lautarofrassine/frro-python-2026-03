@@ -354,3 +354,75 @@ a {
     background-color: var(--verde-oscuro);
     color: #ffffff;
 }
+
+/* ---------- Urgencia ---------- */
+.btn-urgencia {
+    background-color: #dc2626;
+    border: 1px solid #dc2626;
+    color: #ffffff;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+}
+
+.btn-urgencia:hover {
+    background-color: #b91c1c;
+    border-color: #b91c1c;
+    color: #ffffff;
+}
+
+.btn-outline-urgencia {
+    background-color: #ffffff;
+    border: 1px solid #dc2626;
+    color: #b91c1c;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+}
+
+.btn-outline-urgencia:hover {
+    background-color: #dc2626;
+    color: #ffffff;
+}
+
+.franja-urgencia {
+    background-color: #fee2e2;
+    border: 2px solid #dc2626;
+    border-radius: 1.25rem;
+    color: #7f1d1d;
+}
+
+.alerta-critica {
+    background-color: #fee2e2;
+    border: 3px solid #b91c1c;
+    border-radius: 1.25rem;
+    color: #7f1d1d;
+    box-shadow: 0 0.75rem 2rem rgba(185, 28, 28, 0.2);
+}
+
+.alerta-critica .icono-critico {
+    font-size: 5rem;
+    line-height: 1;
+    color: #b91c1c;
+}
+
+.alerta-critica .direccion-grande {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* ---------- Sacar turno: calendario semanal ---------- */
+.dia-semana {
+    background-color: #f9fafb;
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+    height: 100%;
+}
+
+.dia-semana.hoy {
+    box-shadow: inset 0 0 0 2px var(--verde-principal);
+}
+
+.dia-semana-titulo {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}

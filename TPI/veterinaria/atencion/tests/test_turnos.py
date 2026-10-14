@@ -1,5 +1,5 @@
 import warnings
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from importlib import import_module
 from unittest.mock import patch
@@ -13,14 +13,19 @@ from atencion.models import HorarioAtencion, NivelUrgencia, Turno, Veterinario
 from atencion.services.turnos import (
     PRECIO_POR_ESPECIALIDAD,
     HorarioNoDisponible,
+    SeleccionInvalida,
     TurnoError,
     TurnoNoEncontrado,
-    asignar_turno_automatico,
     cancelar_turno,
     crear_turno_manual,
+    especialidades_para_turno,
+    horario_para_consulta,
+    obtener_especialidad_para_turno,
     obtener_turnos_disponibles,
     puede_cancelarse,
     reservar_turno,
+    reservar_turno_de_consulta,
+    semana_de_turnos,
     turnos_disponibles,
 )
 from clinica.services.mascotas import dar_de_baja_mascota, registrar_mascota
@@ -34,8 +39,8 @@ MANANA_10 = datetime(2026, 10, 15, 10, 0, tzinfo=ZONA)
 
 
 def crear_veterinario(nombre, matricula, especialidad, inicio, fin,
-                      estado='ACTIVO'):
-    """Veterinario con horario de lunes a sabado."""
+                      estado='ACTIVO', dias=range(6)):
+    """Veterinario con horario de lunes a sabado (o los `dias` dados)."""
     veterinario = Veterinario.objects.create(
         nombre=nombre, matricula=matricula, especialidad=especialidad,
         estado=estado,
@@ -45,7 +50,7 @@ def crear_veterinario(nombre, matricula, especialidad, inicio, fin,
             veterinario=veterinario, dia_semana=dia,
             hora_inicio=inicio, hora_fin=fin,
         )
-        for dia in range(6)
+        for dia in dias
     ])
     return veterinario
 
@@ -382,23 +387,7 @@ class TurnosDisponiblesTests(TurnosBase):
             turnos_disponibles(hasta=AHORA + timedelta(days=14))
 
 
-class AsignacionYAliasTests(TurnosBase):
-
-    def test_asignar_automatico_reserva_el_horario_mas_proximo(self):
-        turno = asignar_turno_automatico(
-            self.ana, self.firulais.pk, 'CRITICA',
-        )
-
-        self.assertEqual(turno.fecha_hora, AHORA.replace(minute=30))
-        self.assertEqual(turno.tipo, 'Triage')
-        self.assertEqual(turno.nivel_urgencia.nivel_urgencia, 'CRITICA')
-        self.assertEqual(Pago.objects.count(), 1)
-
-    def test_asignar_automatico_sin_veterinarios_da_error(self):
-        Veterinario.objects.update(estado='INACTIVO')
-
-        with self.assertRaises(TurnoError):
-            asignar_turno_automatico(self.ana, self.firulais.pk, 'CRITICA')
+class AliasObsoletosTests(TurnosBase):
 
     def test_crear_turno_manual_delega_en_reservar_turno(self):
         with warnings.catch_warnings(record=True) as avisos:
@@ -431,6 +420,238 @@ class AsignacionYAliasTests(TurnosBase):
         self.assertEqual(
             viejos, turnos_disponibles(hasta=AHORA + timedelta(days=3)),
         )
+
+
+class GuardiaYFinDelDiaTests(TurnosBase):
+    """Franjas de guardia: los 7 dias y hasta el final del dia (el
+    campo no admite 24:00, se carga 23:59)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.de_noche = crear_veterinario(
+            'Dr. Cristian Maldonado', 'MP-5026', 'GUARDIA',
+            time(16, 0), time(23, 59), dias=range(7),
+        )
+        cls.de_madrugada = crear_veterinario(
+            'Dr. Hernán Quiroga', 'MP-5022', 'GUARDIA',
+            time(0, 0), time(8, 0), dias=range(7),
+        )
+
+    def test_hay_turnos_de_guardia_un_domingo_a_las_3_de_la_madrugada(self):
+        domingo_3 = datetime(2026, 10, 18, 3, 0, tzinfo=ZONA)
+
+        libres = turnos_disponibles(
+            especialidad='GUARDIA',
+            desde=domingo_3 - timedelta(minutes=1),
+            hasta=domingo_3,
+        )
+
+        self.assertEqual(
+            [(h['fecha_hora'], h['veterinario_id']) for h in libres],
+            [(domingo_3, self.de_madrugada.pk)],
+        )
+
+    def test_la_franja_hasta_23_59_incluye_el_turno_de_las_23_30(self):
+        hoy_noche = turnos_disponibles(
+            veterinario_id=self.de_noche.pk, hasta=AHORA.replace(hour=23),
+        )
+        todo_el_dia = turnos_disponibles(
+            veterinario_id=self.de_noche.pk,
+            hasta=AHORA.replace(hour=23, minute=59),
+        )
+
+        self.assertEqual(hoy_noche[0]['fecha_hora'], AHORA.replace(hour=16))
+        self.assertEqual(
+            todo_el_dia[-1]['fecha_hora'], AHORA.replace(hour=23, minute=30),
+        )
+        self.assertEqual(len(todo_el_dia), 16)
+
+    def test_se_puede_reservar_a_las_23_30_y_un_domingo_de_madrugada(self):
+        ultimo = self.reservar(
+            veterinario_id=self.de_noche.pk,
+            fecha_hora=AHORA.replace(hour=23, minute=30),
+            tipo='Guardia',
+        )
+        domingo = self.reservar(
+            veterinario_id=self.de_madrugada.pk,
+            fecha_hora=datetime(2026, 10, 18, 3, 0, tzinfo=ZONA),
+            tipo='Guardia',
+        )
+
+        self.assertEqual(ultimo.pagos.get().monto_total, Decimal('30000'))
+        self.assertEqual(domingo.tipo, 'Guardia')
+        with self.assertRaises(TurnoError):
+            self.reservar(
+                veterinario_id=self.de_noche.pk,
+                fecha_hora=AHORA.replace(hour=23, minute=45),
+            )
+
+
+class SacarTurnoServiceTests(TurnosBase):
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.otro_clinico = crear_veterinario(
+            'Dr. Martín Sosa', 'MP-5002', 'CLINICA_GENERAL',
+            time(8, 0), time(19, 0),
+        )
+        cls.guardia = crear_veterinario(
+            'Dra. Luciana Paz', 'MP-5025', 'GUARDIA',
+            time(8, 0), time(16, 0), dias=range(7),
+        )
+        crear_veterinario(
+            'Dra. Paula Navarro', 'MP-5019', 'VACUNACION',
+            time(8, 0), time(13, 0),
+        )
+        crear_veterinario(
+            'Dr. Inactivo', 'MP-9999', 'DERMATOLOGIA',
+            time(8, 0), time(19, 0), estado='INACTIVO',
+        )
+
+    def test_especialidades_excluye_guardia_vacunacion_y_sin_activos(self):
+        especialidades = especialidades_para_turno()
+
+        self.assertEqual(
+            [e['codigo'] for e in especialidades],
+            ['CLINICA_GENERAL', 'CARDIOLOGIA'],
+        )
+        self.assertEqual(especialidades[0]['nombre'], 'Clínica general')
+        self.assertEqual(especialidades[0]['precio'], Decimal('15000'))
+        self.assertTrue(especialidades[0]['descripcion'])
+
+    def test_especialidad_no_ofrecida_es_invalida(self):
+        for codigo in ('GUARDIA', 'VACUNACION', 'DERMATOLOGIA', 'XX', None):
+            with self.subTest(codigo=codigo):
+                with self.assertRaises(SeleccionInvalida):
+                    obtener_especialidad_para_turno(codigo)
+
+    def test_semana_actual_va_de_lunes_a_sabado_con_los_libres(self):
+        semana = semana_de_turnos('CARDIOLOGIA')
+
+        self.assertEqual(semana['lunes'], date(2026, 10, 12))
+        self.assertEqual(
+            [d['fecha'].day for d in semana['dias']],
+            [12, 13, 14, 15, 16, 17],
+        )
+        lunes, martes, miercoles, jueves = semana['dias'][:4]
+        self.assertEqual(lunes['horarios'], [])
+        self.assertEqual(martes['horarios'], [])
+        self.assertTrue(miercoles['es_hoy'])
+        self.assertEqual(
+            miercoles['horarios'][0]['fecha_hora'], AHORA.replace(hour=13),
+        )
+        self.assertEqual(len(jueves['horarios']), 12)
+        self.assertEqual(
+            {h['veterinario_id'] for d in semana['dias']
+             for h in d['horarios']},
+            {self.cardiologo.pk},
+        )
+        self.assertEqual(
+            jueves['horarios'][0]['veterinario_apellido'], 'Acosta',
+        )
+        self.assertIsNone(semana['semana_anterior'])
+        self.assertEqual(semana['semana_siguiente'], '2026-10-19')
+
+    def test_con_todos_ofrece_un_horario_por_hora(self):
+        semana = semana_de_turnos('CLINICA_GENERAL')
+
+        jueves = semana['dias'][3]
+        horas = [h['fecha_hora'] for h in jueves['horarios']]
+        self.assertEqual(len(horas), 22)
+        self.assertEqual(len(set(horas)), 22)
+        self.assertEqual(
+            [v.nombre for v in semana['veterinarios']],
+            ['Dr. Martín Sosa', 'Dra. Laura Fernández'],
+        )
+        self.assertIsNone(semana['veterinario'])
+
+    def test_filtra_por_veterinario_y_saca_los_ocupados(self):
+        self.reservar()
+
+        semana = semana_de_turnos(
+            'CLINICA_GENERAL', veterinario_id=self.clinico.pk,
+        )
+
+        jueves = semana['dias'][3]
+        self.assertEqual(semana['veterinario'], self.clinico)
+        self.assertEqual(len(jueves['horarios']), 21)
+        self.assertNotIn(
+            MANANA_10, [h['fecha_hora'] for h in jueves['horarios']],
+        )
+        self.assertEqual(
+            {h['veterinario_id'] for h in jueves['horarios']},
+            {self.clinico.pk},
+        )
+
+    def test_veterinario_de_otra_especialidad_es_invalido(self):
+        with self.assertRaises(SeleccionInvalida):
+            semana_de_turnos(
+                'CLINICA_GENERAL', veterinario_id=self.cardiologo.pk,
+            )
+
+    def test_no_se_puede_ir_a_semanas_pasadas(self):
+        pasada = semana_de_turnos('CARDIOLOGIA', semana='2026-09-01')
+        siguiente = semana_de_turnos('CARDIOLOGIA', semana='2026-10-21')
+        invalida = semana_de_turnos('CARDIOLOGIA', semana='cualquiera')
+        muy_lejos = semana_de_turnos('CARDIOLOGIA', semana='2030-01-01')
+
+        self.assertEqual(pasada['lunes'], date(2026, 10, 12))
+        self.assertEqual(invalida['lunes'], date(2026, 10, 12))
+        self.assertEqual(siguiente['lunes'], date(2026, 10, 19))
+        self.assertEqual(siguiente['semana_anterior'], '2026-10-12')
+        self.assertEqual(len(siguiente['dias'][0]['horarios']), 12)
+        self.assertEqual(muy_lejos['lunes'], date(2026, 12, 7))
+        self.assertIsNone(muy_lejos['semana_siguiente'])
+
+    def test_horario_para_consulta_devuelve_los_datos_y_el_precio(self):
+        horario = horario_para_consulta(
+            'CARDIOLOGIA', self.cardiologo.pk,
+            MANANA_10.replace(hour=15).isoformat(),
+        )
+
+        self.assertEqual(horario['veterinario'], self.cardiologo)
+        self.assertEqual(horario['fecha_hora'], MANANA_10.replace(hour=15))
+        self.assertEqual(horario['precio'], Decimal('28000'))
+        self.assertEqual(horario['especialidad']['nombre'], 'Cardiología')
+
+    def test_horario_para_consulta_ocupado_o_fuera_de_horario(self):
+        self.reservar()
+
+        for fecha_hora in (MANANA_10, MANANA_10.replace(hour=20)):
+            with self.subTest(fecha_hora=fecha_hora):
+                with self.assertRaises(HorarioNoDisponible):
+                    horario_para_consulta(
+                        'CLINICA_GENERAL', self.clinico.pk, fecha_hora,
+                    )
+
+    def test_reservar_turno_de_consulta_crea_turno_con_motivo_y_pago(self):
+        turno = reservar_turno_de_consulta(
+            self.ana, self.firulais.pk, 'CLINICA_GENERAL', self.clinico.pk,
+            MANANA_10, motivo='Control anual',
+        )
+
+        self.assertEqual(turno.tipo, 'Consulta Regular')
+        self.assertEqual(turno.motivo, 'Control anual')
+        self.assertEqual(turno.pagos.get().monto_total, Decimal('15000'))
+
+    def test_no_se_reserva_consulta_con_guardia_ni_cruzando_veterinario(
+        self,
+    ):
+        casos = (
+            ('GUARDIA', self.guardia.pk),
+            ('CLINICA_GENERAL', self.guardia.pk),
+            ('CARDIOLOGIA', self.clinico.pk),
+        )
+        for especialidad, veterinario_id in casos:
+            with self.subTest(especialidad=especialidad):
+                with self.assertRaises(SeleccionInvalida):
+                    reservar_turno_de_consulta(
+                        self.ana, self.firulais.pk, especialidad,
+                        veterinario_id, MANANA_10,
+                    )
+        self.assertEqual(Turno.objects.count(), 0)
 
 
 class MigracionDuplicadosTests(SimpleTestCase):

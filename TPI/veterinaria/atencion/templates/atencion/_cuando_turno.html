@@ -1,0 +1,1 @@
+{% load turnos_extras %}{% if fecha|es_hoy %}hoy{% else %}{{ fecha|date:"l j \d\e F" }}{% endif %} {{ fecha|date:"H:i" }}

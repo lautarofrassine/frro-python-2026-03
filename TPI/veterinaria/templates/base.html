@@ -35,10 +35,11 @@
 
     <div class="topbar">
         <div class="container d-flex justify-content-end gap-4 py-1 small">
-            <span><i class="bi bi-telephone-fill me-1"></i>(0341) 555-0000</span>
             <span>
-                <i class="bi bi-clock-fill me-1"></i>
-                Atención las 24 hs, todos los días
+                <i class="bi bi-telephone-fill me-1"></i>{{ clinica.telefono }}
+            </span>
+            <span>
+                <i class="bi bi-clock-fill me-1"></i>{{ clinica.horario }}
             </span>
         </div>
     </div>
@@ -141,7 +142,7 @@
                                 </li>
                             </ul>
                         </div>
-                        <a href="{% url 'atencion:triage' %}"
+                        <a href="{% url 'atencion:turno_nuevo' %}"
                            class="btn btn-brand">
                             Sacar turno
                         </a>
@@ -187,8 +188,8 @@
                 </span>
                 ClinicaVet24
             </div>
-            <div>Av. Siempre Viva 1234, Rosario, Santa Fe</div>
-            <div>Atención las 24 hs, todos los días</div>
+            <div>{{ clinica.direccion }}</div>
+            <div>{{ clinica.telefono }} · {{ clinica.horario }}</div>
             <div class="mt-2 opacity-75">
                 &copy; {% now "Y" %} ClinicaVet24. Todos los derechos
                 reservados.

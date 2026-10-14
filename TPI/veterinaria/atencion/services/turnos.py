@@ -3,7 +3,7 @@ reserva (con su pago) y cancelacion. El triage, Mis consultas y las
 vacunas pasan por aca."""
 import warnings
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
 from django.db import IntegrityError, transaction
@@ -26,6 +26,7 @@ ANTICIPACION_MINIMA_CANCELACION = timedelta(hours=2)
 TIPO_CONSULTA = 'Consulta Regular'
 TIPO_TRIAGE = 'Triage'
 TIPO_VACUNACION = 'Vacunación'
+TIPO_GUARDIA = 'Guardia'
 
 # Precio de la consulta segun la especialidad del veterinario, en pesos.
 # Valores ficticios; este es el unico lugar donde se definen.
@@ -38,6 +39,7 @@ PRECIO_POR_ESPECIALIDAD = {
     _E.GASTROENTEROLOGIA: Decimal('24000'),
     _E.OFTALMOLOGIA: Decimal('23000'),
     _E.VACUNACION: Decimal('12000'),
+    _E.GUARDIA: Decimal('30000'),
 }
 # Para veterinarios con una especialidad fuera de la lista.
 PRECIO_BASE = PRECIO_POR_ESPECIALIDAD[_E.CLINICA_GENERAL]
@@ -58,6 +60,11 @@ class HorarioNoDisponible(TurnoError):
 class TurnoNoEncontrado(TurnoError):
     """El turno no existe o no es de una mascota del dueño. La vista lo
     convierte en 404 para no revelar que existe."""
+
+
+class SeleccionInvalida(TurnoError):
+    """La especialidad o el veterinario elegidos no existen o no se
+    ofrecen para sacar turno. La vista lo convierte en 404."""
 
 
 # ---------------------------------------------------------------------
@@ -107,7 +114,7 @@ def turnos_disponibles(especialidad=None, veterinario_id=None, desde=None,
             inicio = timezone.make_aware(
                 datetime.combine(dia, horario.hora_inicio)
             )
-            fin = timezone.make_aware(datetime.combine(dia, horario.hora_fin))
+            fin = timezone.make_aware(_fin_de_franja(dia, horario))
             while inicio + DURACION_TURNO <= fin:
                 libre = (horario.veterinario_id, inicio) not in ocupados
                 if desde < inicio <= hasta and libre:
@@ -125,6 +132,16 @@ def turnos_disponibles(especialidad=None, veterinario_id=None, desde=None,
     return disponibles
 
 
+def _fin_de_franja(dia, horario):
+    """Fin de una franja de HorarioAtencion como datetime sin zona. El
+    campo no admite 24:00: una franja que termina a las 23:59 (o a las
+    00:00) llega hasta el final del dia, asi existe el turno de las
+    23:30."""
+    if horario.hora_fin >= time(23, 59) or horario.hora_fin == time(0, 0):
+        return datetime.combine(dia + timedelta(days=1), time(0, 0))
+    return datetime.combine(dia, horario.hora_fin)
+
+
 def _dentro_del_horario_de_atencion(veterinario, fecha_hora):
     """True si fecha_hora es el comienzo de un turno de 30 minutos
     dentro de un HorarioAtencion del veterinario."""
@@ -135,7 +152,7 @@ def _dentro_del_horario_de_atencion(veterinario, fecha_hora):
         dia_semana=local.weekday(),
     ):
         inicio = datetime.combine(local.date(), horario.hora_inicio)
-        fin = datetime.combine(local.date(), horario.hora_fin)
+        fin = _fin_de_franja(local.date(), horario)
         comienzo = local.replace(tzinfo=None)
         if (inicio <= comienzo
                 and comienzo + DURACION_TURNO <= fin
@@ -257,25 +274,194 @@ def reservar_turno(dueno, mascota_id, veterinario_id, fecha_hora,
     return turno
 
 
-def asignar_turno_automatico(dueno, mascota_id, nivel_urgencia,
-                             tipo=TIPO_TRIAGE):
-    """Reserva el horario libre mas proximo (triage CRITICA). Si justo
-    lo ocupan, prueba con los siguientes. Lanza TurnoError si no hay
-    veterinarios disponibles."""
-    for horario in turnos_disponibles()[:5]:
-        try:
-            return reservar_turno(
-                dueno,
-                mascota_id,
-                horario['veterinario_id'],
-                horario['fecha_hora'],
-                nivel_urgencia=nivel_urgencia,
-                tipo=tipo,
-            )
-        except HorarioNoDisponible:
-            continue
-    raise TurnoError(
-        'No hay veterinarios disponibles para atender la urgencia.'
+# ---------------------------------------------------------------------
+# Sacar turno de consulta: especialidad -> semana -> confirmacion
+# ---------------------------------------------------------------------
+
+# GUARDIA solo se reserva desde Urgencia y VACUNACION desde Vacunas.
+ESPECIALIDADES_SIN_TURNO_DIRECTO = (_E.GUARDIA, _E.VACUNACION)
+# Hasta cuantas semanas adelante se puede navegar el calendario.
+SEMANAS_ADELANTE = 8
+
+DESCRIPCION_POR_ESPECIALIDAD = {
+    _E.CLINICA_GENERAL: 'Chequeos, controles y consultas generales.',
+    _E.CARDIOLOGIA: 'Corazón y sistema circulatorio.',
+    _E.DERMATOLOGIA: 'Piel, pelo, alergias y picazón.',
+    _E.TRAUMATOLOGIA: 'Huesos, articulaciones y cojeras.',
+    _E.GASTROENTEROLOGIA: 'Estómago, intestinos y digestión.',
+    _E.OFTALMOLOGIA: 'Ojos y problemas de visión.',
+}
+
+
+def especialidades_para_turno():
+    """Especialidades con al menos un veterinario activo en las que el
+    dueño puede sacar turno, con su descripcion y precio."""
+    con_veterinarios = set(
+        Veterinario.objects.filter(estado=Veterinario.Estado.ACTIVO)
+        .values_list('especialidad', flat=True)
+    )
+    return [
+        {
+            'codigo': especialidad.value,
+            'nombre': especialidad.label,
+            'descripcion': DESCRIPCION_POR_ESPECIALIDAD.get(especialidad, ''),
+            'precio': PRECIO_POR_ESPECIALIDAD.get(especialidad, PRECIO_BASE),
+        }
+        for especialidad in Veterinario.Especialidad
+        if especialidad in con_veterinarios
+        and especialidad not in ESPECIALIDADES_SIN_TURNO_DIRECTO
+    ]
+
+
+def obtener_especialidad_para_turno(codigo):
+    """Devuelve la especialidad (dict) si se ofrece para sacar turno.
+    Si no, lanza SeleccionInvalida."""
+    for especialidad in especialidades_para_turno():
+        if especialidad['codigo'] == codigo:
+            return especialidad
+    raise SeleccionInvalida(
+        'Esa especialidad no está disponible para sacar turno.'
+    )
+
+
+def veterinarios_de_especialidad(codigo):
+    """Veterinarios activos de esa especialidad, por nombre."""
+    return list(
+        Veterinario.objects.filter(
+            especialidad=codigo, estado=Veterinario.Estado.ACTIVO,
+        ).order_by('nombre')
+    )
+
+
+def _veterinario_de_especialidad(codigo, veterinario_id):
+    for veterinario in veterinarios_de_especialidad(codigo):
+        if str(veterinario.pk) == str(veterinario_id):
+            return veterinario
+    raise SeleccionInvalida('Ese veterinario no atiende esa especialidad.')
+
+
+def _lunes_de_la_semana(semana, lunes_actual):
+    """Lunes de la semana pedida ('AAAA-MM-DD'), sin ir a semanas
+    pasadas ni mas alla de SEMANAS_ADELANTE."""
+    try:
+        dia = date.fromisoformat(str(semana))
+    except ValueError:
+        return lunes_actual
+    lunes = dia - timedelta(days=dia.weekday())
+    ultimo = lunes_actual + timedelta(weeks=SEMANAS_ADELANTE)
+    return min(max(lunes, lunes_actual), ultimo)
+
+
+def semana_de_turnos(especialidad, veterinario_id=None, semana=None):
+    """Datos para el calendario semanal de una especialidad: los
+    horarios libres de cada dia (de lunes a sabado, y el domingo solo si
+    tiene turnos).
+
+    Sin veterinario elegido se ofrece un horario por hora (con el
+    primer veterinario libre); con veterinario, solo los suyos. Lanza
+    SeleccionInvalida si la especialidad o el veterinario no valen.
+    """
+    obtener_especialidad_para_turno(especialidad)
+    veterinario = None
+    if veterinario_id:
+        veterinario = _veterinario_de_especialidad(
+            especialidad, veterinario_id,
+        )
+
+    hoy = timezone.localdate()
+    lunes_actual = hoy - timedelta(days=hoy.weekday())
+    lunes = _lunes_de_la_semana(semana, lunes_actual)
+    libres = turnos_disponibles(
+        especialidad=especialidad,
+        veterinario_id=veterinario.pk if veterinario else None,
+        desde=timezone.make_aware(datetime.combine(lunes, time(0, 0))),
+        hasta=timezone.make_aware(
+            datetime.combine(lunes + timedelta(days=6), time(23, 59, 59))
+        ),
+    )
+
+    horarios_por_dia = defaultdict(list)
+    horas_vistas = set()
+    for horario in libres:
+        if veterinario is None:
+            if horario['fecha_hora'] in horas_vistas:
+                continue
+            horas_vistas.add(horario['fecha_hora'])
+        dia = timezone.localtime(horario['fecha_hora']).date()
+        horarios_por_dia[dia].append({
+            **horario,
+            'veterinario_apellido': horario['veterinario_nombre'].split()[-1],
+        })
+
+    dias = [
+        {
+            'fecha': lunes + timedelta(days=numero),
+            'es_hoy': lunes + timedelta(days=numero) == hoy,
+            'horarios': horarios_por_dia.get(
+                lunes + timedelta(days=numero), [],
+            ),
+        }
+        for numero in range(7)
+    ]
+    if not dias[6]['horarios']:
+        dias.pop()
+
+    anterior = lunes - timedelta(weeks=1)
+    siguiente = lunes + timedelta(weeks=1)
+    ultimo = lunes_actual + timedelta(weeks=SEMANAS_ADELANTE)
+    return {
+        'lunes': lunes,
+        'dias': dias,
+        'veterinarios': veterinarios_de_especialidad(especialidad),
+        'veterinario': veterinario,
+        'semana_anterior': (
+            anterior.isoformat() if anterior >= lunes_actual else None
+        ),
+        'semana_siguiente': (
+            siguiente.isoformat() if siguiente <= ultimo else None
+        ),
+    }
+
+
+def horario_para_consulta(especialidad, veterinario_id, fecha_hora):
+    """Para la pantalla de confirmacion: valida la especialidad y el
+    veterinario (SeleccionInvalida) y que el horario siga libre
+    (HorarioNoDisponible). Devuelve especialidad, veterinario,
+    fecha_hora y precio."""
+    datos_especialidad = obtener_especialidad_para_turno(especialidad)
+    veterinario = _veterinario_de_especialidad(especialidad, veterinario_id)
+    fecha_hora = _interpretar_fecha_hora(fecha_hora)
+    libres = turnos_disponibles(
+        veterinario_id=veterinario.pk,
+        desde=fecha_hora - DURACION_TURNO,
+        hasta=fecha_hora,
+    )
+    if fecha_hora not in [horario['fecha_hora'] for horario in libres]:
+        raise HorarioNoDisponible(
+            'Ese horario ya no está disponible, elegí otro.'
+        )
+    return {
+        'especialidad': datos_especialidad,
+        'veterinario': veterinario,
+        'fecha_hora': fecha_hora,
+        'precio': precio_de_turno(veterinario),
+    }
+
+
+def reservar_turno_de_consulta(dueno, mascota_id, especialidad,
+                               veterinario_id, fecha_hora, motivo=''):
+    """Reserva un turno de consulta en una especialidad que se ofrece
+    para sacar turno (no GUARDIA ni VACUNACION). El resto de las reglas
+    y el pago son los de reservar_turno."""
+    obtener_especialidad_para_turno(especialidad)
+    veterinario = _veterinario_de_especialidad(especialidad, veterinario_id)
+    return reservar_turno(
+        dueno,
+        mascota_id,
+        veterinario.pk,
+        fecha_hora,
+        motivo=motivo,
+        tipo=TIPO_CONSULTA,
     )
 
 

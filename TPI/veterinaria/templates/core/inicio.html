@@ -19,12 +19,14 @@
                     ayuda cuando más lo necesita.
                 </p>
                 <div class="d-flex flex-wrap gap-3 mb-5">
-                    <a href="{% url 'atencion:triage' %}"
+                    <a href="{% url 'atencion:turno_nuevo' %}"
                        class="btn btn-brand btn-lg">
                         Sacar turno
                     </a>
-                    <a href="#contacto" class="btn btn-outline-brand btn-lg">
-                        Contactanos
+                    <a href="{% url 'atencion:urgencia' %}"
+                       class="btn btn-urgencia btn-lg">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        Urgencia
                     </a>
                 </div>
 
@@ -130,11 +132,16 @@
                 </div>
             </div>
             <div class="col">
-                <div class="tarjeta-servicio p-4">
+                <div class="tarjeta-servicio p-4 position-relative">
                     <div class="icono-servicio mb-3">
                         <i class="bi bi-exclamation-octagon"></i>
                     </div>
-                    <h3 class="h5">Urgencias 24 hs</h3>
+                    <h3 class="h5">
+                        <a href="{% url 'atencion:urgencia' %}"
+                           class="stretched-link text-reset text-decoration-none">
+                            Urgencias 24 hs
+                        </a>
+                    </h3>
                     <p class="text-secondary mb-0">
                         Atención de emergencias todos los días, a
                         cualquier hora.
@@ -226,21 +233,19 @@
                 <i class="bi bi-geo-alt-fill fs-2 mb-2 d-block"
                    style="color: var(--verde-principal);"></i>
                 <div class="fw-bold">Dirección</div>
-                <div class="text-secondary">
-                    Av. Siempre Viva 1234, Rosario, Santa Fe
-                </div>
+                <div class="text-secondary">{{ clinica.direccion }}</div>
             </div>
             <div class="col">
                 <i class="bi bi-telephone-fill fs-2 mb-2 d-block"
                    style="color: var(--verde-principal);"></i>
                 <div class="fw-bold">Teléfono</div>
-                <div class="text-secondary">(0341) 555-0000</div>
+                <div class="text-secondary">{{ clinica.telefono }}</div>
             </div>
             <div class="col">
                 <i class="bi bi-clock-fill fs-2 mb-2 d-block"
                    style="color: var(--verde-principal);"></i>
                 <div class="fw-bold">Horario</div>
-                <div class="text-secondary">Las 24 horas, todos los días</div>
+                <div class="text-secondary">{{ clinica.horario }}</div>
             </div>
         </div>
     </div>

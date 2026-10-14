@@ -1,0 +1,11 @@
+{# Botones para ir o llamar a la guardia. `grandes` los hace ocupar todo el ancho en el celular. #}
+<div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+    <a href="{{ clinica.maps_url }}" target="_blank" rel="noopener"
+       class="btn btn-urgencia {% if grandes %}btn-lg{% endif %}">
+        <i class="bi bi-geo-alt-fill me-1"></i>Cómo llegar
+    </a>
+    <a href="tel:{{ clinica.telefono_link }}"
+       class="btn btn-outline-urgencia {% if grandes %}btn-lg{% endif %}">
+        <i class="bi bi-telephone-fill me-1"></i>{{ texto_llamar|default:"Llamar" }}
+    </a>
+</div>

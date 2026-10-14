@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block titulo %}Resultado de la urgencia - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+{% with plan=resultado.plan mascota=resultado.mascota %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7">
+
+                <p class="text-center text-secondary mb-3">
+                    Evaluación de <strong>{{ mascota.nombre }}</strong>
+                    ({{ mascota.get_especie_display }},
+                    edad usada: {{ resultado.edad_texto }})
+                </p>
+
+                {% if plan.gravedad == 'critica' %}
+                    <div class="alerta-critica p-4 p-md-5 text-center">
+                        <i class="bi bi-exclamation-triangle-fill icono-critico d-block mb-2"></i>
+                        <h1 class="fw-bold mb-3">¡URGENCIA CRÍTICA!</h1>
+                        <p class="fs-4 fw-bold mb-4">
+                            Llevá a {{ mascota.nombre }} a la guardia AHORA.
+                            No esperes: te estamos esperando.
+                        </p>
+                        <p class="direccion-grande mb-3">
+                            <i class="bi bi-geo-alt-fill me-1"></i>{{ clinica.direccion }}
+                        </p>
+                        {% include "atencion/_botones_guardia.html" with grandes=True texto_llamar="Llamar ahora" %}
+                        {% if plan.turno %}
+                            <p class="small mt-4 mb-0">
+                                <i class="bi bi-calendar2-check me-1"></i>
+                                Turno de guardia reservado:
+                                {% include "atencion/_cuando_turno.html" with fecha=plan.turno.fecha_hora %},
+                                {{ plan.turno.veterinario.nombre }}
+                            </p>
+                        {% else %}
+                            <p class="fs-5 fw-bold mt-4 mb-0">
+                                Vení igual, te atendemos.
+                            </p>
+                        {% endif %}
+                    </div>
+
+                {% elif plan.gravedad == 'alta' %}
+                    <div class="card tarjeta-resultado-nivel bg-alta border
+                                text-center p-4 p-md-5">
+                        <i class="bi bi-exclamation-triangle-fill icono-nivel mb-2"
+                           style="color: #fb923c;"></i>
+                        <h1 class="h2 mb-3">Urgencia alta</h1>
+                        <p class="fs-5 mb-3">
+                            Acercate con {{ mascota.nombre }} a la guardia
+                            lo antes posible.
+                        </p>
+                        <p class="fw-bold mb-3">
+                            <i class="bi bi-geo-alt-fill me-1"></i>{{ clinica.direccion }}
+                        </p>
+                        {% include "atencion/_botones_guardia.html" %}
+
+                        {% if plan.turno %}
+                            <p class="mt-4 mb-0">
+                                <i class="bi bi-calendar2-check me-1"></i>
+                                Turno de guardia reservado:
+                                {% include "atencion/_cuando_turno.html" with fecha=plan.turno.fecha_hora %},
+                                {{ plan.turno.veterinario.nombre }}
+                            </p>
+                        {% elif plan.turno_propuesto %}
+                            <form method="post" class="mt-4"
+                                  action="{% url 'atencion:urgencia_confirmar' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="mascota" value="{{ mascota.pk }}">
+                                <input type="hidden" name="veterinario"
+                                       value="{{ plan.turno_propuesto.veterinario_id }}">
+                                <input type="hidden" name="fecha_hora"
+                                       value="{{ plan.turno_propuesto.fecha_hora.isoformat }}">
+                                <p class="mb-2">
+                                    Primer turno de guardia libre:
+                                    <strong>{% include "atencion/_cuando_turno.html" with fecha=plan.turno_propuesto.fecha_hora %}</strong>,
+                                    {{ plan.turno_propuesto.veterinario_nombre }}
+                                </p>
+                                <button type="submit" class="btn btn-brand btn-lg">
+                                    Confirmar turno de guardia
+                                </button>
+                            </form>
+                        {% else %}
+                            <p class="fw-bold mt-4 mb-0">
+                                Vení igual, te atendemos.
+                            </p>
+                        {% endif %}
+                    </div>
+
+                {% else %}
+                    <div class="card tarjeta-resultado-nivel bg-success
+                                bg-opacity-10 border border-success
+                                text-center p-4 p-md-5">
+                        <i class="bi bi-check-circle-fill icono-nivel
+                                  text-success mb-2"></i>
+                        <h1 class="h3 mb-3">No parece una emergencia</h1>
+                        <p class="fs-5 mb-4">
+                            Te recomendamos sacar un turno de consulta.
+                        </p>
+                        <div>
+                            <a href="{% url 'atencion:turno_nuevo' %}?mascota={{ mascota.pk }}"
+                               class="btn btn-brand btn-lg">
+                                <i class="bi bi-calendar2-plus me-1"></i>
+                                Sacar turno para {{ mascota.nombre }}
+                            </a>
+                        </div>
+                        <p class="small text-secondary mt-3 mb-0">
+                            Nivel de urgencia:
+                            {{ resultado.nivel|lower|capfirst }}
+                        </p>
+                    </div>
+                {% endif %}
+
+                {% if resultado.regla_aplicada %}
+                    <div class="alert alert-info mt-4">
+                        <i class="bi bi-info-circle-fill me-1"></i>
+                        <strong>Nivel ajustado por regla de seguridad:</strong>
+                        {{ resultado.regla_aplicada }}
+                        <br>
+                        El modelo había sugerido inicialmente:
+                        <strong>{{ resultado.nivel_modelo }}</strong>.
+                    </div>
+                {% endif %}
+
+                <p class="text-secondary small text-center mt-4">
+                    Esta es una orientación automática y no reemplaza la
+                    evaluación de un veterinario. Ante cualquier duda o
+                    signo de gravedad, vení igualmente a la guardia.
+                </p>
+
+                <div class="text-center">
+                    <a href="{% url 'atencion:urgencia' %}"
+                       class="btn btn-outline-secondary">
+                        Volver a evaluar
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+{% endwith %}
+{% endblock %}

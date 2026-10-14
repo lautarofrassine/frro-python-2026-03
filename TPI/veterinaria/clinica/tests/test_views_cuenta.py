@@ -105,6 +105,33 @@ class RegistroViewTests(TestCase):
         self.assertIn('password1', response.context['form'].errors)
         self.assertEqual(get_user_model().objects.count(), 0)
 
+    def test_con_next_vuelve_a_esa_pagina_despues_de_registrarse(self):
+        url = reverse('clinica:registro') + '?next=/atencion/urgencia/'
+
+        formulario = self.client.get(url)
+        response = self.client.post(
+            reverse('clinica:registro'),
+            _datos_registro(next='/atencion/urgencia/'),
+        )
+
+        self.assertContains(
+            formulario, 'name="next" value="/atencion/urgencia/"',
+        )
+        self.assertRedirects(
+            response, '/atencion/urgencia/', fetch_redirect_response=False,
+        )
+
+    def test_un_next_externo_se_ignora(self):
+        response = self.client.post(
+            reverse('clinica:registro'),
+            _datos_registro(next='https://sitio-malicioso.example/'),
+        )
+
+        self.assertRedirects(
+            response, reverse('clinica:panel'),
+            fetch_redirect_response=False,
+        )
+
     def test_con_sesion_iniciada_redirige_al_panel(self):
         self.client.force_login(_crear_dueno().usuario)
 
@@ -172,7 +199,7 @@ class PanelViewTests(TestCase):
         self.assertContains(response, '28111222')
         self.assertContains(response, 'ana@mail.com')
         self.assertContains(response, 'Todavía no registraste mascotas')
-        self.assertContains(response, reverse('atencion:triage'))
+        self.assertContains(response, reverse('atencion:turno_nuevo'))
 
     def test_personal_sin_dueno_ve_mensaje_y_link_al_admin(self):
         personal = get_user_model().objects.create_user(

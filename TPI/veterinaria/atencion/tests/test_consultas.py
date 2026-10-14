@@ -183,7 +183,7 @@ class ConsultasViewTests(ConsultasBase):
         response = self.client.get(reverse('atencion:consultas'))
 
         self.assertContains(response, 'No tenés turnos reservados')
-        self.assertContains(response, reverse('atencion:triage'))
+        self.assertContains(response, reverse('atencion:turno_nuevo'))
 
     def test_historial_muestra_los_turnos_pasados(self):
         self.crear_turno(

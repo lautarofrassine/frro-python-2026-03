@@ -16,6 +16,7 @@ class Veterinario(models.Model):
         GASTROENTEROLOGIA = 'GASTROENTEROLOGIA', 'Gastroenterología'
         OFTALMOLOGIA = 'OFTALMOLOGIA', 'Oftalmología'
         VACUNACION = 'VACUNACION', 'Vacunación'
+        GUARDIA = 'GUARDIA', 'Guardia'
 
     nombre = models.CharField(max_length=100)
     matricula = models.CharField(max_length=20, unique=True)
@@ -53,6 +54,8 @@ class HorarioAtencion(models.Model):
     )
     dia_semana = models.IntegerField(choices=DiaSemana.choices)
     hora_inicio = models.TimeField()
+    # Una franja no cruza la medianoche. Para atender hasta el final
+    # del dia se carga 23:59 (services/turnos.py lo toma como 24:00).
     hora_fin = models.TimeField()
 
     class Meta:

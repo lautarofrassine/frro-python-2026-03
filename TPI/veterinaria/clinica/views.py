@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse
-from django.utils.http import urlencode
+from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 
 from clinica.forms import MascotaForm, RegistroForm
 from clinica.services.mascotas import (
@@ -44,6 +44,13 @@ def registro_view(request):
     if request.user.is_authenticated:
         return redirect('clinica:panel')
 
+    # A donde ir despues de registrarse (solo direcciones del sitio).
+    siguiente = request.POST.get('next') or request.GET.get('next') or ''
+    if not url_has_allowed_host_and_scheme(
+        siguiente, allowed_hosts={request.get_host()},
+    ):
+        siguiente = ''
+
     if request.method == 'POST':
         form = RegistroForm(request.POST)
         if form.is_valid():
@@ -58,10 +65,13 @@ def registro_view(request):
                     f'¡Te damos la bienvenida, {dueno.nombre}! Tu cuenta '
                     'fue creada.',
                 )
-                return redirect('clinica:panel')
+                return redirect(siguiente or 'clinica:panel')
     else:
         form = RegistroForm()
-    return render(request, 'clinica/registro.html', {'form': form})
+    return render(request, 'clinica/registro.html', {
+        'form': form,
+        'next': siguiente,
+    })
 
 
 @login_required

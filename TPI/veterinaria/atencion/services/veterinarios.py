@@ -9,6 +9,11 @@ from atencion.models import HorarioAtencion, Veterinario
 # hora_fin (ver services/turnos.py).
 MANANA = (time(8, 0), time(13, 0))
 TARDE = (time(13, 0), time(19, 0))
+# La guardia cubre las 24 horas en 3 franjas de 8 horas que no cruzan
+# la medianoche. El campo no admite 24:00: 23:59 es el fin del dia.
+GUARDIA_MADRUGADA = (time(0, 0), time(8, 0))
+GUARDIA_DIA = (time(8, 0), time(16, 0))
+GUARDIA_NOCHE = (time(16, 0), time(23, 59))
 DIAS_DE_ATENCION = (
     HorarioAtencion.DiaSemana.LUNES,
     HorarioAtencion.DiaSemana.MARTES,
@@ -17,6 +22,8 @@ DIAS_DE_ATENCION = (
     HorarioAtencion.DiaSemana.VIERNES,
     HorarioAtencion.DiaSemana.SABADO,
 )
+
+TODOS_LOS_DIAS = tuple(HorarioAtencion.DiaSemana)
 
 _E = Veterinario.Especialidad
 
@@ -52,13 +59,31 @@ VETERINARIOS_VACUNACION = [
     ('MP-5021', 'Dra. Milagros Suárez', _E.VACUNACION, MANANA),
 ]
 
+# Guardia: 2 veterinarios por franja, los 7 dias. Como los de
+# VACUNACION, solo se crean si no hay ninguno de GUARDIA.
+VETERINARIOS_GUARDIA = [
+    ('MP-5022', 'Dr. Hernán Quiroga', _E.GUARDIA, GUARDIA_MADRUGADA),
+    ('MP-5023', 'Dra. Soledad Ibáñez', _E.GUARDIA, GUARDIA_MADRUGADA),
+    ('MP-5024', 'Dr. Maximiliano Vera', _E.GUARDIA, GUARDIA_DIA),
+    ('MP-5025', 'Dra. Luciana Paz', _E.GUARDIA, GUARDIA_DIA),
+    ('MP-5026', 'Dr. Cristian Maldonado', _E.GUARDIA, GUARDIA_NOCHE),
+    ('MP-5027', 'Dra. Brenda Coronel', _E.GUARDIA, GUARDIA_NOCHE),
+]
+
+# Especialidades cuyos veterinarios se cargan solo si no hay ninguno.
+CARGA_SI_NO_HAY = {
+    _E.VACUNACION: VETERINARIOS_VACUNACION,
+    _E.GUARDIA: VETERINARIOS_GUARDIA,
+}
+
 
 @transaction.atomic
 def cargar_veterinarios_iniciales():
     """Crea los veterinarios de VETERINARIOS_INICIALES que todavia no
     existen (se busca por matricula, asi se puede correr varias veces),
-    todos ACTIVO y con su horario de lunes a sabado. Los de VACUNACION
-    se crean solo si no hay ninguno de esa especialidad.
+    todos ACTIVO y con su horario (de lunes a sabado; la guardia, los 7
+    dias). Los de VACUNACION y los de GUARDIA se crean solo si no hay
+    ninguno de esa especialidad.
 
     Devuelve {etiqueta_especialidad: {'creados': n, 'existentes': n}}.
     """
@@ -67,15 +92,14 @@ def cargar_veterinarios_iniciales():
         for etiqueta in Veterinario.Especialidad.labels
     }
     a_cargar = list(VETERINARIOS_INICIALES)
-    de_vacunacion = Veterinario.objects.filter(
-        especialidad=Veterinario.Especialidad.VACUNACION,
-    ).count()
-    if de_vacunacion:
-        resumen[Veterinario.Especialidad.VACUNACION.label]['existentes'] = (
-            de_vacunacion
-        )
-    else:
-        a_cargar += VETERINARIOS_VACUNACION
+    for especialidad, veterinarios in CARGA_SI_NO_HAY.items():
+        ya_cargados = Veterinario.objects.filter(
+            especialidad=especialidad,
+        ).count()
+        if ya_cargados:
+            resumen[especialidad.label]['existentes'] = ya_cargados
+        else:
+            a_cargar += veterinarios
 
     for matricula, nombre, especialidad, franja in a_cargar:
         veterinario, creado = Veterinario.objects.get_or_create(
@@ -95,7 +119,10 @@ def cargar_veterinarios_iniciales():
                     hora_inicio=hora_inicio,
                     hora_fin=hora_fin,
                 )
-                for dia in DIAS_DE_ATENCION
+                for dia in (
+                    TODOS_LOS_DIAS if especialidad == _E.GUARDIA
+                    else DIAS_DE_ATENCION
+                )
             ])
         clave = 'creados' if creado else 'existentes'
         resumen[especialidad.label][clave] += 1

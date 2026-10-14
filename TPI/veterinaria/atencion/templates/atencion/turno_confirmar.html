@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load mascotas_extras %}
+
+{% block titulo %}Confirmar turno - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7">
+                <div class="card tarjeta-triage">
+                    <div class="card-body p-4 p-md-5">
+                        <h1 class="h3 mb-4">
+                            <i class="bi bi-calendar2-check text-success me-2"></i>
+                            Confirmá el turno
+                        </h1>
+                        <dl class="row mb-4">
+                            <dt class="col-5 text-secondary">Mascota</dt>
+                            <dd class="col-7">
+                                <i class="fa-solid {{ mascota.especie|icono_especie }} me-1"></i>
+                                {{ mascota.nombre }}
+                            </dd>
+                            <dt class="col-5 text-secondary">Especialidad</dt>
+                            <dd class="col-7">{{ horario.especialidad.nombre }}</dd>
+                            <dt class="col-5 text-secondary">Veterinario</dt>
+                            <dd class="col-7">{{ horario.veterinario.nombre }}</dd>
+                            <dt class="col-5 text-secondary">Fecha</dt>
+                            <dd class="col-7">
+                                {{ horario.fecha_hora|date:"l j \d\e F"|capfirst }}
+                            </dd>
+                            <dt class="col-5 text-secondary">Hora</dt>
+                            <dd class="col-7">{{ horario.fecha_hora|date:"H:i" }} hs</dd>
+                            <dt class="col-5 text-secondary">Precio</dt>
+                            <dd class="col-7 mb-0 fw-bold">
+                                ${{ horario.precio|floatformat:"0g" }}
+                            </dd>
+                        </dl>
+
+                        <form method="post"
+                              action="{% url 'atencion:turno_confirmar' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="mascota" value="{{ mascota.pk }}">
+                            <input type="hidden" name="especialidad"
+                                   value="{{ horario.especialidad.codigo }}">
+                            <input type="hidden" name="veterinario"
+                                   value="{{ horario.veterinario.pk }}">
+                            <input type="hidden" name="fecha_hora"
+                                   value="{{ horario.fecha_hora|date:'c' }}">
+                            <div class="mb-4">
+                                <label for="motivo" class="form-label fw-semibold">
+                                    Motivo de la consulta
+                                    <span class="fw-normal text-secondary">(opcional)</span>
+                                </label>
+                                <textarea name="motivo" id="motivo" rows="3"
+                                          maxlength="{{ largo_maximo_motivo }}"
+                                          class="form-control"
+                                          placeholder="Contanos brevemente qué le pasa"></textarea>
+                            </div>
+                            <div class="d-flex flex-column flex-sm-row gap-2">
+                                <button type="submit" class="btn btn-brand btn-lg flex-fill">
+                                    Confirmar turno
+                                </button>
+                                <a href="{{ url_paso_3 }}"
+                                   class="btn btn-outline-secondary btn-lg">
+                                    Elegir otro horario
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

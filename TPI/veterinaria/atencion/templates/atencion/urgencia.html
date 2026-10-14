@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block titulo %}Triage automático - ClinicaVet24{% endblock %}
+{% block titulo %}Urgencia - ClinicaVet24{% endblock %}
 {% block body_class %}fondo-verde-claro{% endblock %}
 
 {% block contenido %}
@@ -8,31 +8,62 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-8">
+
+                <div class="franja-urgencia p-4 mb-4 text-center">
+                    <p class="fs-5 fw-bold mb-2">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        Si tu mascota no respira, está inconsciente o
+                        sangra mucho, vení directo a la guardia
+                    </p>
+                    <p class="mb-3">
+                        <i class="bi bi-geo-alt-fill me-1"></i>{{ clinica.direccion }}
+                        <span class="d-none d-sm-inline">·</span>
+                        <span class="d-block d-sm-inline">
+                            <i class="bi bi-telephone-fill me-1"></i>{{ clinica.telefono }}
+                        </span>
+                    </p>
+                    {% include "atencion/_botones_guardia.html" %}
+                </div>
+
+                {% if not form %}
+                    <div class="card tarjeta-triage">
+                        <div class="card-body p-4 p-md-5 text-center">
+                            <h1 class="h4 mb-2">¿No es tan grave?</h1>
+                            <p class="text-secondary mb-4">
+                                Ingresá para contarnos los síntomas de tu
+                                mascota: evaluamos la urgencia y te
+                                decimos qué hacer.
+                            </p>
+                            <div class="d-flex flex-column flex-sm-row gap-2
+                                        justify-content-center">
+                                <a href="{% url 'clinica:ingresar' %}?next={% url 'atencion:urgencia' %}"
+                                   class="btn btn-brand btn-lg">
+                                    Ingresar
+                                </a>
+                                <a href="{% url 'clinica:registro' %}?next={% url 'atencion:urgencia' %}"
+                                   class="btn btn-outline-brand btn-lg">
+                                    Registrarme
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
                 <div class="card tarjeta-triage">
                     <div class="card-body p-4 p-md-5">
                         <h1 class="h3 mb-2">
                             <i class="bi bi-clipboard2-pulse text-success me-2"></i>
-                            Triage automático
+                            Evaluar la urgencia
                         </h1>
                         <p class="text-secondary">
                             Contestá estas preguntas sobre tu mascota para
-                            saber con qué urgencia conviene pedir el turno.
-                            Esto es una orientación automática y
+                            saber qué tan urgente es. Esto es una
+                            orientación automática y
                             <strong>no reemplaza la evaluación de un
                             veterinario</strong>.
                         </p>
 
                         <form method="post" novalidate class="mt-4">
                             {% csrf_token %}
-
-                            {% if messages %}
-                                {% for message in messages %}
-                                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-                                        {{ message }}
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                    </div>
-                                {% endfor %}
-                            {% endif %}
 
                             {% if form.non_field_errors %}
                                 <div class="alert alert-danger">
@@ -110,6 +141,8 @@
                         </form>
                     </div>
                 </div>
+                {% endif %}
+
             </div>
         </div>
     </div>
