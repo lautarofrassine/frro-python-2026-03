@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
@@ -541,3 +542,96 @@ class AgendaSinTurnosTests(VeterinarioBase):
         self.assertEqual(
             response.context['agenda']['dias'][6]['fecha'], domingo.date(),
         )
+
+
+class NavegacionVeterinarioTests(VeterinarioBase):
+
+    LINKS_LANDING = ('#servicios', '#como-funciona', '#contacto')
+
+    def _links_del_menu(self, contenido):
+        """(href, activo) de cada link del menu central."""
+        menu = re.search(
+            r'<ul class="navbar-nav mx-auto[^"]*">(.*?)</ul>', contenido,
+            re.S,
+        ).group(1)
+        return [
+            (href, 'active' in clase)
+            for clase, href in re.findall(
+                r'<a class="(nav-link[^"]*)"[^>]*\s+href="([^"]+)"', menu,
+            )
+        ]
+
+    def test_la_navbar_del_veterinario_tiene_solo_agenda_e_historias(self):
+        self.como_veterinario()
+
+        contenido = self.client.get(URL_AGENDA).content.decode()
+
+        self.assertEqual(
+            [href for href, _ in self._links_del_menu(contenido)],
+            [URL_AGENDA, reverse('veterinario:historias')],
+        )
+        for ancla in self.LINKS_LANDING:
+            with self.subTest(ancla=ancla):
+                self.assertNotIn(ancla, contenido)
+        self.assertIn('Salir', contenido)
+
+    def test_marca_la_pagina_activa(self):
+        turno = self.turno(self.firulais, self.clinico, MANANA_10)
+        self.como_veterinario()
+        historias = reverse('veterinario:historias')
+        casos = (
+            (URL_AGENDA, URL_AGENDA),
+            (reverse('veterinario:turno', args=[turno.pk]), URL_AGENDA),
+            (historias, historias),
+            (reverse('veterinario:historia', args=[self.firulais.pk]),
+             historias),
+            (reverse('veterinario:entrada_nueva', args=[self.firulais.pk]),
+             historias),
+        )
+        for url, activo in casos:
+            with self.subTest(url=url):
+                contenido = self.client.get(url).content.decode()
+                activos = [
+                    href for href, es_activo in self._links_del_menu(contenido)
+                    if es_activo
+                ]
+                self.assertEqual(activos, [activo])
+                self.assertIn('aria-current="page"', contenido)
+
+    def test_el_logo_lleva_a_la_agenda(self):
+        self.como_veterinario()
+
+        response = self.client.get(reverse('veterinario:historias'))
+
+        self.assertRegex(
+            response.content.decode(),
+            r'class="navbar-brand[^"]*"\s+href="/veterinario/agenda/"',
+        )
+
+    def test_un_veterinario_que_entra_al_inicio_va_a_su_agenda(self):
+        self.como_veterinario()
+
+        response = self.client.get(reverse('core:inicio'))
+
+        self.assertRedirects(response, URL_AGENDA)
+
+    def test_dueno_y_visitante_siguen_viendo_la_landing(self):
+        for usuario in (None, self.ana.usuario):
+            with self.subTest(usuario=usuario):
+                self.client.logout()
+                if usuario:
+                    self.client.force_login(usuario)
+
+                response = self.client.get(reverse('core:inicio'))
+                contenido = response.content.decode()
+
+                self.assertEqual(response.status_code, 200)
+                self.assertTemplateUsed(response, 'core/inicio.html')
+                self.assertEqual(
+                    [href for href, _ in self._links_del_menu(contenido)],
+                    ['/', '/#servicios', '/#como-funciona', '/#contacto'],
+                )
+                self.assertRegex(
+                    contenido, r'class="navbar-brand[^"]*"\s+href="/"',
+                )
+                self.assertNotIn(f'href="{URL_AGENDA}"', contenido)
