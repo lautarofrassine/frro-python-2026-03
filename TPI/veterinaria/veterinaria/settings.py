@@ -94,6 +94,10 @@ DATABASES = {
         'OPTIONS': {
             'ssl_mode': 'REQUIRED',
         },
+        # Reusar la conexion con Aiven hasta 60 s entre pedidos y, antes
+        # de reusarla, verificar que siga viva (si se corto, se reabre).
+        'CONN_MAX_AGE': 60,
+        'CONN_HEALTH_CHECKS': True,
     }
 }
 
