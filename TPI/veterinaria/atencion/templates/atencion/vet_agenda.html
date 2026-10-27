@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block titulo %}Mi agenda - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-center
+                    gap-3 mb-4">
+            <div>
+                <h1 class="h2 mb-0">
+                    <i class="bi bi-calendar-week text-success me-2"></i>Mi agenda
+                </h1>
+                <div class="text-secondary">
+                    {{ veterinario.nombre }} ·
+                    {{ veterinario.get_especialidad_display }}
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="?semana={{ agenda.semana_anterior }}"
+                   class="btn btn-outline-brand btn-sm" aria-label="Semana anterior">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+                <span class="fw-semibold">
+                    Semana del {{ agenda.lunes|date:"j \d\e F" }}
+                </span>
+                <a href="?semana={{ agenda.semana_siguiente }}"
+                   class="btn btn-outline-brand btn-sm" aria-label="Semana siguiente">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+                {% if not agenda.es_semana_actual %}
+                    <a href="{% url 'veterinario:agenda' %}"
+                       class="btn btn-brand btn-sm">Hoy</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-xl-9">
+                <div class="card tarjeta-triage">
+                    <div class="card-body p-3">
+                        {# En el celular la grilla queda en una columna: lista por dia. #}
+                        <div class="agenda-semana">
+                            {% for dia in agenda.dias %}
+                                <div class="dia-semana {% if dia.es_hoy %}hoy{% endif %}">
+                                    <div class="dia-semana-titulo">
+                                        {{ dia.fecha|date:"l"|capfirst }}
+                                        <span class="d-block small fw-normal">
+                                            {{ dia.fecha|date:"j/m" }}
+                                        </span>
+                                    </div>
+                                    {% for turno in dia.turnos %}
+                                        {% include "atencion/_turno_agenda.html" %}
+                                    {% empty %}
+                                        <div class="text-secondary small text-center py-2">
+                                            Sin turnos
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3">
+                <div class="card tarjeta-triage">
+                    <div class="card-body p-3">
+                        <h2 class="h6 text-uppercase text-secondary mb-3">
+                            Turnos de hoy
+                        </h2>
+                        {% for turno in turnos_hoy %}
+                            {% include "atencion/_turno_agenda.html" %}
+                        {% empty %}
+                            <p class="text-secondary small mb-0">
+                                No tenés turnos hoy.
+                            </p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

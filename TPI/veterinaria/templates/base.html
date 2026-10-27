@@ -98,9 +98,29 @@
                                     type="button" data-bs-toggle="dropdown"
                                     aria-expanded="false">
                                 <i class="bi bi-person-circle me-1"></i>
-                                Hola, {{ user.first_name|default:user.username }}
+                                {% if veterinario_actual %}
+                                    Hola, {{ veterinario_actual.nombre }}
+                                {% else %}
+                                    Hola, {{ user.first_name|default:user.username }}
+                                {% endif %}
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
+                                {% if veterinario_actual %}
+                                <li>
+                                    <a class="dropdown-item"
+                                       href="{% url 'veterinario:agenda' %}">
+                                        <i class="bi bi-calendar-week me-1"></i>
+                                        Mi agenda
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item"
+                                       href="{% url 'veterinario:historias' %}">
+                                        <i class="bi bi-journal-medical me-1"></i>
+                                        Historias clínicas
+                                    </a>
+                                </li>
+                                {% else %}
                                 <li>
                                     <a class="dropdown-item"
                                        href="{% url 'clinica:panel' %}">
@@ -129,6 +149,7 @@
                                         Vacunas
                                     </a>
                                 </li>
+                                {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form method="post"
@@ -143,10 +164,12 @@
                                 </li>
                             </ul>
                         </div>
-                        <a href="{% url 'atencion:turno_nuevo' %}"
-                           class="btn btn-brand">
-                            Sacar turno
-                        </a>
+                        {% if not veterinario_actual %}
+                            <a href="{% url 'atencion:turno_nuevo' %}"
+                               class="btn btn-brand">
+                                Sacar turno
+                            </a>
+                        {% endif %}
                     {% else %}
                         <a href="{% url 'clinica:ingresar' %}"
                            class="btn btn-outline-brand">

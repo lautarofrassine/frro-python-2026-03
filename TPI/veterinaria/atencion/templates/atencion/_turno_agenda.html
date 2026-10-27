@@ -1,0 +1,22 @@
+{% load mascotas_extras turnos_extras %}
+<a href="{% url 'veterinario:turno' turno.pk %}" class="turno-agenda">
+    <div class="d-flex justify-content-between align-items-center gap-1">
+        <strong>{{ turno.fecha_hora|date:"H:i" }}</strong>
+        {% if turno|es_de_guardia %}
+            <span class="badge {{ turno.nivel_urgencia.nivel_urgencia|clase_urgencia }}">
+                {{ turno.nivel_urgencia.get_nivel_urgencia_display }}
+            </span>
+        {% elif turno.vacuna %}
+            <span class="badge text-bg-light border">
+                <i class="fa-solid fa-syringe me-1"></i>{{ turno.vacuna.nombre_corto }}
+            </span>
+        {% endif %}
+    </div>
+    <div>
+        <i class="fa-solid {{ turno.mascota.especie|icono_especie }} me-1"></i>
+        {{ turno.mascota.nombre }}
+    </div>
+    <div class="dato-mascota">
+        {{ turno.mascota.dueno.nombre }} {{ turno.mascota.dueno.apellido }}
+    </div>
+</a>

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load mascotas_extras %}
+
+{% block titulo %}Historias clínicas - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-center
+                    gap-3 mb-4">
+            <h1 class="h2 mb-0">
+                <i class="bi bi-journal-medical text-success me-2"></i>
+                Historias clínicas
+            </h1>
+            <form method="get" class="d-flex gap-2" role="search">
+                <input type="search" name="q" value="{{ buscar }}"
+                       class="form-control" aria-label="Buscar"
+                       placeholder="Mascota o dueño">
+                <button type="submit" class="btn btn-brand">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
+        </div>
+        <p class="text-secondary">
+            Las mascotas que atendiste o tenés en agenda.
+        </p>
+
+        {% if mascotas %}
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+                {% for mascota in mascotas %}
+                    <div class="col">
+                        <div class="card tarjeta-mascota tarjeta-seleccionable position-relative">
+                            <div class="card-body p-3 d-flex align-items-center gap-3">
+                                <span class="avatar-mascota">
+                                    <i class="fa-solid {{ mascota.especie|icono_especie }}"></i>
+                                </span>
+                                <div>
+                                    <h2 class="h6 mb-0">
+                                        <a href="{% url 'veterinario:historia' mascota.pk %}"
+                                           class="stretched-link text-reset text-decoration-none">
+                                            {{ mascota.nombre }}
+                                        </a>
+                                    </h2>
+                                    <div class="dato-mascota">
+                                        {{ mascota.raza }} · {{ mascota|edad }}
+                                    </div>
+                                    <div class="dato-mascota">
+                                        Dueño: {{ mascota.dueno.nombre }} {{ mascota.dueno.apellido }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card tarjeta-triage">
+                <div class="card-body p-4 text-center text-secondary">
+                    {% if buscar %}
+                        No encontramos mascotas para «{{ buscar }}».
+                    {% else %}
+                        Todavía no tenés mascotas atendidas ni en agenda.
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

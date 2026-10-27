@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block titulo %}Sin acceso - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <div class="card tarjeta-triage">
+                    <div class="card-body p-5 text-center">
+                        <i class="bi bi-shield-lock fs-1 text-danger d-block mb-3"></i>
+                        <h1 class="h4">No tenés acceso a esta sección</h1>
+                        <p class="text-secondary mb-4">
+                            Esta pantalla es para otro tipo de usuario.
+                        </p>
+                        <a href="{% url 'core:inicio' %}" class="btn btn-brand">
+                            Ir al inicio
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

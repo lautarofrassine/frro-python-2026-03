@@ -108,6 +108,19 @@ class HistorialClinico(models.Model):
         on_delete=models.CASCADE,
         related_name='historial_clinico',
     )
+    # Quien cargo la entrada y, si corresponde, en que consulta.
+    veterinario = models.ForeignKey(
+        'atencion.Veterinario',
+        on_delete=models.PROTECT,
+        related_name='entradas_historia',
+    )
+    turno = models.ForeignKey(
+        'atencion.Turno',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='entradas_historia',
+    )
     fecha = models.DateTimeField(auto_now_add=True)
     diagnostico = models.TextField()
     tratamiento = models.TextField()

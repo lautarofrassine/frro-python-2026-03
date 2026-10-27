@@ -1,5 +1,10 @@
+import re
+import unicodedata
 from datetime import time
 
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from atencion.models import HorarioAtencion, Veterinario
@@ -127,3 +132,110 @@ def cargar_veterinarios_iniciales():
         clave = 'creados' if creado else 'existentes'
         resumen[especialidad.label][clave] += 1
     return resumen
+
+
+# ---------------------------------------------------------------------
+# Cuentas de los veterinarios (no se registran por la web)
+# ---------------------------------------------------------------------
+
+DOMINIO_EMAIL = 'clinicavet24.com'
+_TITULOS = {'dr', 'dra'}
+
+
+class CuentaVeterinarioError(Exception):
+    """No se pueden crear las cuentas (falta o no sirve la contraseña
+    inicial)."""
+
+
+def obtener_veterinario_de_usuario(user):
+    """El Veterinario vinculado al usuario, o None (dueños, personal o
+    usuario anonimo)."""
+    if not getattr(user, 'is_authenticated', False):
+        return None
+    return Veterinario.objects.filter(usuario=user).first()
+
+
+def _palabras_del_nombre(nombre):
+    """'Dra. Laura Fernández' -> ['Laura', 'Fernández'] (sin el titulo)."""
+    return [
+        palabra for palabra in nombre.split()
+        if palabra.lower().rstrip('.') not in _TITULOS
+    ]
+
+
+def _para_email(palabra):
+    sin_tildes = ''.join(
+        caracter
+        for caracter in unicodedata.normalize('NFKD', palabra)
+        if not unicodedata.combining(caracter)
+    )
+    return re.sub(r'[^a-z]', '', sin_tildes.lower())
+
+
+def _email_libre(nombre):
+    """nombre.apellido@clinicavet24.com, con un numero si ya existe."""
+    palabras = [_para_email(p) for p in _palabras_del_nombre(nombre)]
+    palabras = [p for p in palabras if p] or ['veterinario']
+    local = '.'.join([palabras[0], palabras[-1]] if len(palabras) > 1
+                     else palabras)
+    User = get_user_model()
+    candidato = f'{local}@{DOMINIO_EMAIL}'
+    numero = 2
+    while (User.objects.filter(username__iexact=candidato).exists()
+           or User.objects.filter(email__iexact=candidato).exists()):
+        candidato = f'{local}{numero}@{DOMINIO_EMAIL}'
+        numero += 1
+    return candidato
+
+
+@transaction.atomic
+def crear_usuarios_veterinarios(password):
+    """Crea la cuenta de cada veterinario activo que todavia no tiene
+    (email nombre.apellido@clinicavet24.com) con la contraseña inicial,
+    guardada hasheada. No toca a los que ya tienen cuenta.
+
+    Devuelve la lista de veterinarios a los que se les creo cuenta.
+    Lanza CuentaVeterinarioError si falta la contraseña o no cumple los
+    validadores de Django.
+    """
+    if not password:
+        raise CuentaVeterinarioError(
+            'Falta la contraseña inicial: definí la variable de entorno '
+            'VET_PASSWORD_INICIAL (por ejemplo en el archivo .env).'
+        )
+    try:
+        validate_password(password)
+    except ValidationError as error:
+        raise CuentaVeterinarioError(
+            'La contraseña inicial (VET_PASSWORD_INICIAL) no es válida: '
+            + ' '.join(error.messages)
+        )
+
+    User = get_user_model()
+    creados = []
+    sin_cuenta = Veterinario.objects.filter(
+        estado=Veterinario.Estado.ACTIVO, usuario__isnull=True,
+    ).order_by('nombre')
+    for veterinario in sin_cuenta:
+        email = _email_libre(veterinario.nombre)
+        palabras = _palabras_del_nombre(veterinario.nombre)
+        # create_user guarda la contraseña con set_password (hasheada).
+        veterinario.usuario = User.objects.create_user(
+            username=email,
+            email=email,
+            first_name=palabras[0] if palabras else '',
+            last_name=' '.join(palabras[1:]),
+            password=password,
+        )
+        veterinario.save(update_fields=['usuario'])
+        creados.append(veterinario)
+    return creados
+
+
+def veterinarios_con_cuenta():
+    """Veterinarios que ya tienen cuenta, por especialidad y nombre."""
+    return list(
+        Veterinario.objects.filter(usuario__isnull=False)
+        .select_related('usuario')
+        .order_by('especialidad', 'nombre')
+    )

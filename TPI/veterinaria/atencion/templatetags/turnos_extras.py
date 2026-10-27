@@ -24,3 +24,26 @@ def se_puede_cancelar(turno):
 def es_hoy(fecha_hora):
     """True si la fecha (en hora local) es la de hoy."""
     return timezone.localtime(fecha_hora).date() == timezone.localdate()
+
+
+TIPOS_CON_URGENCIA = ('Guardia', 'Triage')
+CLASE_POR_NIVEL = {
+    'CRITICA': 'text-bg-danger',
+    'ALTA': 'bg-alta',
+    'MEDIA': 'text-bg-warning',
+    'BAJA': 'text-bg-success',
+}
+
+
+@register.filter
+def es_de_guardia(turno):
+    """True si el turno salio de Urgencia (su nivel de urgencia importa).
+    Los de consulta tambien tienen nivel (BAJA por defecto), pero no se
+    muestra."""
+    return turno.tipo in TIPOS_CON_URGENCIA
+
+
+@register.filter
+def clase_urgencia(nivel):
+    """Clase de color del badge del nivel de urgencia."""
+    return CLASE_POR_NIVEL.get(str(nivel), 'text-bg-secondary')

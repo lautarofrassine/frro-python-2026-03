@@ -16,7 +16,10 @@ class HorarioAtencionInline(admin.TabularInline):
 
 @admin.register(Veterinario)
 class VeterinarioAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'matricula', 'especialidad', 'estado')
+    list_display = (
+        'nombre', 'matricula', 'especialidad', 'estado', 'usuario',
+    )
+    raw_id_fields = ('usuario',)
     search_fields = ('nombre', 'matricula', 'especialidad')
     list_filter = ('estado', 'especialidad')
     inlines = [HorarioAtencionInline]

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block titulo %}{% if entrada %}Editar entrada{% else %}Nueva entrada{% endif %} - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7">
+                <div class="card tarjeta-triage">
+                    <div class="card-body p-4 p-md-5">
+                        <h1 class="h3 mb-1">
+                            <i class="bi bi-journal-medical text-success me-2"></i>
+                            {% if entrada %}Editar entrada{% else %}Nueva entrada{% endif %}
+                        </h1>
+                        <p class="text-secondary mb-4">
+                            Historia clínica de <strong>{{ mascota.nombre }}</strong>
+                            {% if turno %}
+                                · turno del {{ turno.fecha_hora|date:"d/m/Y H:i" }} hs
+                            {% endif %}
+                        </p>
+
+                        <form method="post" novalidate>
+                            {% csrf_token %}
+                            {% if turno and not entrada %}
+                                <input type="hidden" name="turno" value="{{ turno.pk }}">
+                            {% endif %}
+                            {% for error in form.non_field_errors %}
+                                <div class="alert alert-danger">{{ error }}</div>
+                            {% endfor %}
+                            {% include "includes/campo_form.html" with campo=form.diagnostico %}
+                            {% include "includes/campo_form.html" with campo=form.tratamiento %}
+                            {% include "includes/campo_form.html" with campo=form.observaciones %}
+                            <div class="d-flex flex-column flex-sm-row gap-2 mt-2">
+                                <button type="submit" class="btn btn-brand btn-lg flex-fill">
+                                    Guardar
+                                </button>
+                                <a href="{% url 'veterinario:historia' mascota.pk %}"
+                                   class="btn btn-outline-secondary btn-lg">
+                                    Cancelar
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

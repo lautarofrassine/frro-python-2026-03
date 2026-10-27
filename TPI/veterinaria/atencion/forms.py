@@ -22,6 +22,39 @@ def _etiqueta(mascota):
     return f'{mascota.nombre} ({mascota.get_especie_display()}, {edad})'
 
 
+class EntradaHistoriaForm(forms.Form):
+    """Entrada de la historia clinica que carga un veterinario. Solo
+    valida formato; las reglas las valida clinica.services.historias."""
+
+    diagnostico = forms.CharField(
+        label='Diagnóstico',
+        widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+    )
+    tratamiento = forms.CharField(
+        label='Tratamiento',
+        widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+    )
+    observaciones = forms.CharField(
+        label='Observaciones',
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+    )
+
+    @classmethod
+    def desde_entrada(cls, entrada):
+        return cls(initial={
+            'diagnostico': entrada.diagnostico,
+            'tratamiento': entrada.tratamiento,
+            'observaciones': entrada.observaciones,
+        })
+
+    def datos_entrada(self):
+        return {
+            campo: self.cleaned_data[campo]
+            for campo in ('diagnostico', 'tratamiento', 'observaciones')
+        }
+
+
 class TriageForm(forms.Form):
     # Las opciones se cargan en __init__ con las mascotas del dueño, que
     # la vista obtiene del service: el form no consulta modelos.

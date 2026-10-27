@@ -38,5 +38,7 @@ class AplicacionVacunaAdmin(admin.ModelAdmin):
 
 @admin.register(HistorialClinico)
 class HistorialClinicoAdmin(admin.ModelAdmin):
-    list_display = ('mascota', 'fecha', 'diagnostico')
+    list_display = ('mascota', 'fecha', 'veterinario', 'diagnostico')
+    list_select_related = ('mascota', 'veterinario')
+    raw_id_fields = ('turno',)
     search_fields = ('diagnostico', 'tratamiento')

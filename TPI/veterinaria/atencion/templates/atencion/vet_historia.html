@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load mascotas_extras %}
+
+{% block titulo %}Historia clínica de {{ mascota.nombre }} - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <a href="{% url 'veterinario:historias' %}" class="small">
+            <i class="bi bi-arrow-left me-1"></i>Historias clínicas
+        </a>
+
+        <div class="row g-4 mt-1">
+            <div class="col-lg-4">
+                <div class="card tarjeta-triage">
+                    <div class="card-body p-4">
+                        <h1 class="h4 mb-3">
+                            <i class="fa-solid {{ mascota.especie|icono_especie }} text-success me-2"></i>
+                            {{ mascota.nombre }}
+                        </h1>
+                        <dl class="row mb-0">
+                            <dt class="col-5 text-secondary">Especie</dt>
+                            <dd class="col-7">{{ mascota.get_especie_display }}</dd>
+                            <dt class="col-5 text-secondary">Raza</dt>
+                            <dd class="col-7">{{ mascota.raza }}</dd>
+                            <dt class="col-5 text-secondary">Edad</dt>
+                            <dd class="col-7">{{ mascota|edad }}</dd>
+                            <dt class="col-5 text-secondary">Peso</dt>
+                            <dd class="col-7">{{ mascota.peso_kg }} kg</dd>
+                        </dl>
+                        <hr>
+                        <h2 class="h6 text-uppercase text-secondary">Dueño</h2>
+                        <div>{{ mascota.dueno.nombre }} {{ mascota.dueno.apellido }}</div>
+                        <div class="dato-mascota">
+                            <a href="tel:{{ mascota.dueno.telefono }}">{{ mascota.dueno.telefono }}</a>
+                        </div>
+                        <div class="dato-mascota text-break">
+                            <a href="mailto:{{ mascota.dueno.email }}">{{ mascota.dueno.email }}</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h4 mb-0">Historia clínica</h2>
+                    <a href="{% url 'veterinario:entrada_nueva' mascota.pk %}"
+                       class="btn btn-brand">
+                        <i class="bi bi-plus-lg me-1"></i>Nueva entrada
+                    </a>
+                </div>
+
+                {% if entradas %}
+                    <div class="linea-tiempo">
+                        {% for entrada in entradas %}
+                            <div class="entrada card tarjeta-mascota mb-3">
+                                <div class="card-body p-4">
+                                    <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+                                        <div class="fw-bold">
+                                            {{ entrada.fecha|date:"d/m/Y H:i" }} hs
+                                        </div>
+                                        <div class="dato-mascota">
+                                            {{ entrada.veterinario.nombre }}
+                                            {% if entrada.turno %}
+                                                · Turno del {{ entrada.turno.fecha_hora|date:"d/m" }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="fw-semibold">Diagnóstico:</span>
+                                        {{ entrada.diagnostico|linebreaksbr }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="fw-semibold">Tratamiento:</span>
+                                        {{ entrada.tratamiento|linebreaksbr }}
+                                    </div>
+                                    {% if entrada.observaciones %}
+                                        <div class="mb-2">
+                                            <span class="fw-semibold">Observaciones:</span>
+                                            {{ entrada.observaciones|linebreaksbr }}
+                                        </div>
+                                    {% endif %}
+                                    {% if entrada.veterinario_id == veterinario.pk %}
+                                        <a href="{% url 'veterinario:entrada_editar' entrada.pk %}"
+                                           class="btn btn-sm btn-outline-brand">
+                                            <i class="bi bi-pencil me-1"></i>Editar
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="card tarjeta-triage">
+                        <div class="card-body p-4 text-center text-secondary">
+                            Todavía no hay entradas en la historia clínica
+                            de {{ mascota.nombre }}.
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

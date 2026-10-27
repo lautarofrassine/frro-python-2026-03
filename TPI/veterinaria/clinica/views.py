@@ -4,13 +4,16 @@ from functools import wraps
 
 from django.contrib import messages
 from django.contrib.auth import login
+from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 
-from clinica.forms import MascotaForm, RegistroForm
+from atencion.permisos import rechazar_veterinarios
+from atencion.services.veterinarios import obtener_veterinario_de_usuario
+from clinica.forms import LoginForm, MascotaForm, RegistroForm
 from clinica.services.mascotas import (
     MascotaError,
     MascotaNoEncontrada,
@@ -74,8 +77,37 @@ def registro_view(request):
     })
 
 
+# Todas las pantallas de veterinario cuelgan de aca.
+PREFIJO_VETERINARIO = '/veterinario/'
+
+
+class IngresarView(auth_views.LoginView):
+    """Misma pantalla para dueños y veterinarios. Despues de ingresar,
+    cada uno va a su inicio: el dueño a su panel y el veterinario a su
+    agenda. El `next` se respeta solo si corresponde al rol."""
+
+    template_name = 'clinica/ingresar.html'
+    authentication_form = LoginForm
+    redirect_authenticated_user = True
+
+    def get_success_url(self):
+        es_veterinario = (
+            obtener_veterinario_de_usuario(self.request.user) is not None
+        )
+        siguiente = self.get_redirect_url()
+        if siguiente and (
+            siguiente.startswith(PREFIJO_VETERINARIO) == es_veterinario
+        ):
+            return siguiente
+        if es_veterinario:
+            return reverse('veterinario:agenda')
+        return reverse('clinica:panel')
+
+
 @login_required
 def panel_view(request):
+    if obtener_veterinario_de_usuario(request.user) is not None:
+        return redirect('veterinario:agenda')
     dueno = obtener_dueno_de_usuario(request.user)
     return render(request, 'clinica/panel.html', {
         'dueno': dueno,
@@ -89,6 +121,8 @@ def dueno_requerido(vista):
     @login_required
     @wraps(vista)
     def envoltura(request, *args, **kwargs):
+        # Los veterinarios no tienen acceso a las pantallas de dueño.
+        rechazar_veterinarios(request)
         dueno = obtener_dueno_de_usuario(request.user)
         if dueno is None:
             return render(request, 'clinica/sin_dueno.html')

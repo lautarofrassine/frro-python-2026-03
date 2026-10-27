@@ -1,8 +1,8 @@
 # Regla del proyecto: las vistas solo llaman a funciones de services/,
 # nunca acceden a los modelos ni contienen reglas de negocio.
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
+from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -11,7 +11,17 @@ from django.utils.formats import date_format
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.views.decorators.http import require_POST
 
-from atencion.forms import TriageForm
+from atencion.forms import EntradaHistoriaForm, TriageForm
+from atencion.permisos import (
+    rechazar_veterinarios,
+    solo_duenos,
+    veterinario_requerido,
+)
+from atencion.services.agenda import (
+    agenda_semanal,
+    obtener_turno_del_veterinario,
+    turnos_de_hoy,
+)
 from atencion.services.turnos import (
     SeleccionInvalida,
     TurnoError,
@@ -37,6 +47,18 @@ from clinica.services.mascotas import (
     listar_mascotas,
     obtener_mascota_de_dueno,
 )
+from clinica.services.historias import (
+    EntradaAjena,
+    EntradaNoEncontrada,
+    HistoriaError,
+    cargar_entrada,
+    editar_entrada,
+    historia_clinica,
+    mascotas_atendidas,
+    obtener_entrada_propia,
+    obtener_mascota_atendida,
+    obtener_turno_para_entrada,
+)
 from clinica.services.usuarios import obtener_dueno_de_usuario
 
 LARGO_MAXIMO_MOTIVO = 500
@@ -52,7 +74,7 @@ def _cuando(fecha_hora):
     return date_format(local, r'l j \d\e F'), date_format(local, 'H:i')
 
 
-@login_required
+@solo_duenos
 def consultas_view(request):
     # El personal de la clinica no tiene Dueno: los services devuelven
     # listas vacias y la plantilla muestra un mensaje.
@@ -76,6 +98,7 @@ def urgencia_view(request):
         if request.method == 'POST':
             return redirect_to_login(reverse('atencion:urgencia'))
         return render(request, 'atencion/urgencia.html', {'form': None})
+    rechazar_veterinarios(request)
 
     dueno = obtener_dueno_de_usuario(request.user)
     mascotas = listar_mascotas(dueno)
@@ -118,7 +141,7 @@ def urgencia_view(request):
     })
 
 
-@login_required
+@solo_duenos
 @require_POST
 def urgencia_confirmar_view(request):
     """Confirma el turno de guardia propuesto para una urgencia ALTA."""
@@ -153,7 +176,7 @@ def _mascota_o_404(dueno, mascota_id):
         raise Http404('Mascota no encontrada.')
 
 
-@login_required
+@solo_duenos
 def turno_nuevo_view(request):
     dueno = obtener_dueno_de_usuario(request.user)
 
@@ -193,7 +216,7 @@ def turno_nuevo_view(request):
     })
 
 
-@login_required
+@solo_duenos
 def turno_confirmar_view(request):
     """GET muestra la confirmacion; POST reserva y va a Mis consultas.
     Si el horario ya fue tomado, vuelve al paso 3 con el error."""
@@ -245,7 +268,7 @@ def turno_confirmar_view(request):
 # Cancelacion
 # ---------------------------------------------------------------------
 
-@login_required
+@solo_duenos
 def turno_cancelar_view(request, turno_id):
     """GET muestra la confirmacion; POST cancela. `siguiente` indica a
     donde volver (Mis consultas por defecto)."""
@@ -277,4 +300,125 @@ def turno_cancelar_view(request, turno_id):
     return render(request, 'atencion/turno_cancelar.html', {
         'turno': turno,
         'siguiente': siguiente,
+    })
+
+
+# ---------------------------------------------------------------------
+# Veterinarios: agenda e historias clinicas (/veterinario/...)
+# ---------------------------------------------------------------------
+
+@veterinario_requerido
+def agenda_view(request, veterinario):
+    return render(request, 'atencion/vet_agenda.html', {
+        'veterinario': veterinario,
+        'agenda': agenda_semanal(veterinario, request.GET.get('semana')),
+        'turnos_hoy': turnos_de_hoy(veterinario),
+    })
+
+
+@veterinario_requerido
+def vet_turno_view(request, veterinario, turno_id):
+    try:
+        turno = obtener_turno_del_veterinario(veterinario, turno_id)
+    except TurnoNoEncontrado:
+        raise Http404('Turno no encontrado.')
+    return render(request, 'atencion/vet_turno.html', {'turno': turno})
+
+
+@veterinario_requerido
+def historias_view(request, veterinario):
+    buscar = request.GET.get('q', '').strip()
+    return render(request, 'atencion/vet_historias.html', {
+        'mascotas': mascotas_atendidas(veterinario, buscar),
+        'buscar': buscar,
+    })
+
+
+def _mascota_atendida_o_404(veterinario, mascota_id):
+    try:
+        return obtener_mascota_atendida(veterinario, mascota_id)
+    except MascotaNoEncontrada:
+        raise Http404('Mascota no encontrada.')
+
+
+@veterinario_requerido
+def historia_view(request, veterinario, mascota_id):
+    mascota = _mascota_atendida_o_404(veterinario, mascota_id)
+    return render(request, 'atencion/vet_historia.html', {
+        'veterinario': veterinario,
+        'mascota': mascota,
+        'entradas': historia_clinica(mascota),
+    })
+
+
+@veterinario_requerido
+def entrada_nueva_view(request, veterinario, mascota_id):
+    """Formulario de nueva entrada. Si viene ?turno=ID (desde el detalle
+    del turno), la entrada queda asociada a ese turno."""
+    mascota = _mascota_atendida_o_404(veterinario, mascota_id)
+    datos = request.POST if request.method == 'POST' else request.GET
+    turno_id = datos.get('turno') or None
+    try:
+        turno = obtener_turno_para_entrada(veterinario, mascota, turno_id)
+    except HistoriaError:
+        raise Http404('Turno no encontrado.')
+
+    if request.method == 'POST':
+        form = EntradaHistoriaForm(request.POST)
+        if form.is_valid():
+            try:
+                cargar_entrada(
+                    veterinario, mascota.pk, turno_id=turno_id,
+                    **form.datos_entrada(),
+                )
+            except HistoriaError as error:
+                form.add_error(error.campo, str(error))
+            else:
+                messages.success(
+                    request,
+                    'Entrada guardada en la historia clínica de '
+                    f'{mascota.nombre}.',
+                )
+                return redirect('veterinario:historia', mascota_id=mascota.pk)
+    else:
+        form = EntradaHistoriaForm()
+    return render(request, 'atencion/vet_entrada_form.html', {
+        'form': form,
+        'mascota': mascota,
+        'turno': turno,
+        'entrada': None,
+    })
+
+
+@veterinario_requerido
+def entrada_editar_view(request, veterinario, entrada_id):
+    """Solo las entradas propias; las de otro veterinario dan 403."""
+    try:
+        entrada = obtener_entrada_propia(veterinario, entrada_id)
+        if request.method == 'POST':
+            form = EntradaHistoriaForm(request.POST)
+            if form.is_valid():
+                try:
+                    editar_entrada(
+                        veterinario, entrada.pk, **form.datos_entrada(),
+                    )
+                except HistoriaError as error:
+                    form.add_error(error.campo, str(error))
+                else:
+                    messages.success(request, 'Se actualizó la entrada.')
+                    return redirect(
+                        'veterinario:historia',
+                        mascota_id=entrada.mascota_id,
+                    )
+        else:
+            form = EntradaHistoriaForm.desde_entrada(entrada)
+    except EntradaNoEncontrada:
+        raise Http404('Entrada no encontrada.')
+    except EntradaAjena:
+        raise PermissionDenied('Solo podés editar tus propias entradas.')
+    return render(request, 'atencion/vet_entrada_form.html', {
+        'form': form,
+        'mascota': entrada.mascota,
+        'turno': entrada.turno,
+        'entrada': entrada,
     })

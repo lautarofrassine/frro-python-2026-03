@@ -1,8 +1,6 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
 
-from clinica.forms import LoginForm
-
 from . import views
 
 app_name = 'clinica'
@@ -11,11 +9,7 @@ urlpatterns = [
     path('registro/', views.registro_view, name='registro'),
     path(
         'ingresar/',
-        auth_views.LoginView.as_view(
-            template_name='clinica/ingresar.html',
-            authentication_form=LoginForm,
-            redirect_authenticated_user=True,
-        ),
+        views.IngresarView.as_view(),
         name='ingresar',
     ),
     path('salir/', auth_views.LogoutView.as_view(), name='salir'),

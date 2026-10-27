@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -18,6 +19,15 @@ class Veterinario(models.Model):
         VACUNACION = 'VACUNACION', 'Vacunación'
         GUARDIA = 'GUARDIA', 'Guardia'
 
+    # Cuenta para ingresar (la crea crear_usuarios_veterinarios; los
+    # veterinarios no se registran por la web).
+    usuario = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='veterinario',
+    )
     nombre = models.CharField(max_length=100)
     matricula = models.CharField(max_length=20, unique=True)
     especialidad = models.CharField(

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load mascotas_extras turnos_extras %}
+
+{% block titulo %}Turno de {{ turno.mascota.nombre }} - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+{% with mascota=turno.mascota dueno=turno.mascota.dueno %}
+<section class="py-5">
+    <div class="container">
+        <a href="{% url 'veterinario:agenda' %}?semana={{ turno.fecha_hora|date:'Y-m-d' }}"
+           class="small"><i class="bi bi-arrow-left me-1"></i>Volver a la agenda</a>
+        <h1 class="h3 mt-2 mb-4">
+            Turno del {{ turno.fecha_hora|date:"l j \d\e F"|capfirst }},
+            {{ turno.fecha_hora|date:"H:i" }} hs
+        </h1>
+
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card tarjeta-triage h-100">
+                    <div class="card-body p-4">
+                        <h2 class="h5 mb-3">
+                            <i class="fa-solid {{ mascota.especie|icono_especie }} text-success me-2"></i>
+                            {{ mascota.nombre }}
+                        </h2>
+                        <dl class="row mb-0">
+                            <dt class="col-5 text-secondary">Especie</dt>
+                            <dd class="col-7">{{ mascota.get_especie_display }}</dd>
+                            <dt class="col-5 text-secondary">Raza</dt>
+                            <dd class="col-7">{{ mascota.raza }}</dd>
+                            <dt class="col-5 text-secondary">Edad</dt>
+                            <dd class="col-7">{{ mascota|edad }}</dd>
+                            <dt class="col-5 text-secondary">Peso</dt>
+                            <dd class="col-7">{{ mascota.peso_kg }} kg</dd>
+                        </dl>
+                        <hr>
+                        <h3 class="h6 text-uppercase text-secondary">Dueño</h3>
+                        <dl class="row mb-0">
+                            <dt class="col-5 text-secondary">Nombre</dt>
+                            <dd class="col-7">{{ dueno.nombre }} {{ dueno.apellido }}</dd>
+                            <dt class="col-5 text-secondary">Teléfono</dt>
+                            <dd class="col-7">
+                                <a href="tel:{{ dueno.telefono }}">{{ dueno.telefono }}</a>
+                            </dd>
+                            <dt class="col-5 text-secondary">Email</dt>
+                            <dd class="col-7 text-break mb-0">
+                                <a href="mailto:{{ dueno.email }}">{{ dueno.email }}</a>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card tarjeta-triage h-100">
+                    <div class="card-body p-4">
+                        <h2 class="h5 mb-3">Datos del turno</h2>
+                        <dl class="row">
+                            <dt class="col-5 text-secondary">Tipo</dt>
+                            <dd class="col-7">
+                                {{ turno.tipo }}
+                                {% if turno.vacuna %}
+                                    · <i class="fa-solid fa-syringe me-1"></i>{{ turno.vacuna.nombre }}
+                                {% endif %}
+                            </dd>
+                            <dt class="col-5 text-secondary">Motivo</dt>
+                            <dd class="col-7">{{ turno.motivo|default:"—" }}</dd>
+                            {% if turno|es_de_guardia %}
+                                <dt class="col-5 text-secondary">Nivel de urgencia</dt>
+                                <dd class="col-7">
+                                    <span class="badge {{ turno.nivel_urgencia.nivel_urgencia|clase_urgencia }}">
+                                        {{ turno.nivel_urgencia.get_nivel_urgencia_display }}
+                                    </span>
+                                </dd>
+                            {% endif %}
+                            <dt class="col-5 text-secondary">Estado</dt>
+                            <dd class="col-7">{{ turno.get_estado_display }}</dd>
+                            <dt class="col-5 text-secondary">Pago</dt>
+                            <dd class="col-7 mb-0">
+                                {% with pago=turno|ultimo_pago %}
+                                    {% if pago %}
+                                        {{ pago.get_estado_display }}
+                                        (${{ pago.monto_total|floatformat:"0g" }})
+                                    {% else %}
+                                        Sin pago registrado
+                                    {% endif %}
+                                {% endwith %}
+                            </dd>
+                        </dl>
+                        <div class="d-flex flex-column flex-sm-row gap-2">
+                            <a href="{% url 'veterinario:historia' mascota.pk %}"
+                               class="btn btn-outline-brand">
+                                <i class="bi bi-journal-medical me-1"></i>
+                                Ver historia clínica
+                            </a>
+                            <a href="{% url 'veterinario:entrada_nueva' mascota.pk %}?turno={{ turno.pk }}"
+                               class="btn btn-brand">
+                                <i class="bi bi-plus-lg me-1"></i>
+                                Cargar entrada en la historia clínica
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endwith %}
+{% endblock %}
