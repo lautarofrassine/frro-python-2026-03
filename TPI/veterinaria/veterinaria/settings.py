@@ -31,6 +31,11 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
+# Mercado Pago Checkout Pro (credenciales de prueba en desarrollo).
+# Sin MP_ACCESS_TOKEN la app ofrece pagar en la clinica.
+MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN", "")
+MP_PUBLIC_KEY = os.getenv("MP_PUBLIC_KEY", "")
+
 ALLOWED_HOSTS = []
 
 

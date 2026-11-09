@@ -8,7 +8,10 @@ from datetime import date, datetime, time, timedelta
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from administracion.models import Pago
+from administracion.services.pagos import (
+    cancelar_pago_de_turno,
+    crear_pago_de_turno,
+)
 from atencion.models import HorarioAtencion, NivelUrgencia, Turno, Veterinario
 from atencion.services.precios import (  # noqa: F401 (se reexportan)
     PRECIO_BASE,
@@ -196,9 +199,9 @@ def precio_de_turno(veterinario, fecha_hora):
 def reservar_turno(dueno, mascota_id, veterinario_id, fecha_hora,
                    nivel_urgencia=None, vacuna=None, motivo='', tipo=None):
     """Reserva un turno para una mascota del dueño y crea su Pago
-    PENDIENTE con el precio del veterinario vigente en la fecha del
-    turno (queda fijo: un cambio de precio posterior no lo modifica).
-    Todo o nada.
+    (administracion.services.pagos.crear_pago_de_turno): precio del
+    veterinario vigente en la fecha del turno, cobertura de la obra
+    social y monto a pagar, que quedan fijos. Todo o nada.
 
     Valida que la mascota sea del dueño y este activa, que el
     veterinario este activo, que el horario sea futuro, este dentro de
@@ -256,11 +259,7 @@ def reservar_turno(dueno, mascota_id, veterinario_id, fecha_hora,
                 motivo=motivo or '',
                 estado=Turno.Estado.PENDIENTE,
             )
-            Pago.objects.create(
-                turno=turno,
-                monto_total=precio_de_turno(veterinario, fecha_hora),
-                estado=Pago.Estado.PENDIENTE,
-            )
+            crear_pago_de_turno(turno)
     except IntegrityError:
         # Respaldo: la restriccion de unicidad de la base rechazo una
         # reserva simultanea que paso las verificaciones.
@@ -548,8 +547,9 @@ def puede_cancelarse(turno):
 def cancelar_turno(dueno, turno_id):
     """Cancela un turno futuro del dueño con mas de 2 horas de
     anticipacion: el turno pasa a CANCELADO (su horario queda libre) y
-    su pago pendiente a CANCELADO. Lanza TurnoNoEncontrado si no es del
-    dueño y TurnoError si ya no se puede cancelar."""
+    su pago, segun cancelar_pago_de_turno (PAGADO pasa a REEMBOLSADO).
+    Lanza TurnoNoEncontrado si no es del dueño y TurnoError si ya no se
+    puede cancelar."""
     with transaction.atomic():
         try:
             turno = (
@@ -565,9 +565,7 @@ def cancelar_turno(dueno, turno_id):
 
         turno.estado = Turno.Estado.CANCELADO
         turno.save(update_fields=['estado'])
-        turno.pagos.filter(estado=Pago.Estado.PENDIENTE).update(
-            estado=Pago.Estado.CANCELADO,
-        )
+        cancelar_pago_de_turno(turno)
     return turno
 
 

@@ -216,14 +216,17 @@ class SacarTurnoViewTests(TurnosViewsBase):
         self.assertContains(response, 'name="motivo"')
         self.assertEqual(Turno.objects.count(), 0)
 
-    def test_reservar_redirige_a_mis_consultas_con_el_mensaje(self):
+    def test_reservar_lleva_al_resumen_del_pago_con_el_mensaje(self):
         response = self.client.post(
             URL_CONFIRMAR,
             self._datos_confirmacion(motivo='  Control anual  '),
             follow=True,
         )
 
-        self.assertRedirects(response, reverse('atencion:consultas'))
+        pago = Pago.objects.get()
+        self.assertRedirects(
+            response, reverse('pagos:confirmacion', args=[pago.pk]),
+        )
         self.assertContains(
             response,
             '¡Turno reservado para Firulais el jueves 15 de octubre a las '

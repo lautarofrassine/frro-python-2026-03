@@ -8,6 +8,11 @@ app_name = 'veterinario'
 urlpatterns = [
     path('agenda/', views.agenda_view, name='agenda'),
     path('turnos/<int:turno_id>/', views.vet_turno_view, name='turno'),
+    path(
+        'turnos/<int:turno_id>/pagos/<int:pago_id>/cobrar/',
+        views.vet_cobrar_view,
+        name='cobrar',
+    ),
     path('historias/', views.historias_view, name='historias'),
     path('precios/', views.vet_precios_view, name='precios'),
     path(

@@ -43,6 +43,7 @@
                                 {% with pago=turno|ultimo_pago %}
                                     {% if pago %}
                                         {{ pago.get_estado_display }}
+                                        · <a href="{% url 'pagos:confirmacion' pago.pk %}">ver detalle</a>
                                     {% else %}
                                         Sin pago registrado
                                     {% endif %}

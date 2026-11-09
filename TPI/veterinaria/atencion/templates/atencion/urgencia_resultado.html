@@ -35,6 +35,10 @@
                                 {% include "atencion/_cuando_turno.html" with fecha=plan.turno.fecha_hora %},
                                 {{ plan.turno.veterinario.nombre }}
                             </p>
+                            {# Sin boton de pago: ahora lo importante es venir. #}
+                            <p class="small mb-0">
+                                Lo pagás en la clínica o después desde Mis pagos.
+                            </p>
                         {% else %}
                             <p class="fs-5 fw-bold mt-4 mb-0">
                                 Vení igual, te atendemos.

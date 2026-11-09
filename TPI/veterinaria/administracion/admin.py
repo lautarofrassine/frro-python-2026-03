@@ -30,7 +30,13 @@ class MedicamentoAdmin(admin.ModelAdmin):
 @admin.register(Pago)
 class PagoAdmin(admin.ModelAdmin):
     list_display = (
-        'turno', 'monto_total', 'monto_cubierto_os', 'metodo', 'estado',
-        'fecha',
+        'turno', 'monto_total', 'monto_cubierto_os', 'monto_a_pagar',
+        'metodo', 'estado', 'numero_comprobante', 'fecha',
     )
     list_filter = ('metodo', 'estado')
+    search_fields = ('numero_comprobante', 'mp_payment_id')
+    readonly_fields = (
+        'monto_total', 'monto_cubierto_os', 'monto_a_pagar',
+        'detalle_cobertura', 'fecha', 'fecha_pago', 'numero_comprobante',
+        'mp_preference_id', 'mp_payment_id',
+    )

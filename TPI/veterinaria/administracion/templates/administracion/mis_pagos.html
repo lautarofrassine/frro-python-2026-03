@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% load pagos_extras %}
+
+{% block titulo %}Mis pagos - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <h1 class="h2 mb-4">
+            <i class="bi bi-wallet2 text-success me-2"></i>Mis pagos
+        </h1>
+
+        <h2 class="h5 mb-3">Pendientes</h2>
+        {% if pendientes %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 mb-5">
+                {% for pago in pendientes %}
+                    <div class="col">
+                        <div class="card tarjeta-mascota h-100">
+                            <div class="card-body p-4 d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <span class="fw-semibold">
+                                        {{ pago.turno|servicio_del_turno }} de {{ pago.turno.mascota.nombre }}
+                                    </span>
+                                    <span class="fw-bold fs-5">{{ pago.monto_a_pagar|pesos }}</span>
+                                </div>
+                                <div class="dato-mascota">
+                                    <i class="bi bi-person-badge me-1"></i>{{ pago.turno.veterinario.nombre }}
+                                </div>
+                                <div class="dato-mascota mb-3">
+                                    <i class="bi bi-calendar-event me-1"></i>
+                                    {{ pago.turno.fecha_hora|date:"d/m/Y H:i" }} hs
+                                </div>
+                                <div class="mt-auto">
+                                    {% if pago|se_puede_pagar and pago_online_disponible %}
+                                        <form method="post" action="{% url 'pagos:pagar' pago.pk %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-brand w-100">
+                                                <i class="bi bi-credit-card me-1"></i>Realizar pago
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <span class="small text-secondary">
+                                            <i class="bi bi-shop me-1"></i>Se paga en la clínica.
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card tarjeta-triage mb-5">
+                <div class="card-body p-4 text-center text-secondary">
+                    No tenés pagos pendientes.
+                </div>
+            </div>
+        {% endif %}
+
+        <h2 class="h5 mb-3">Historial</h2>
+        {% if historial %}
+            <div class="card tarjeta-triage">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="ps-4">Turno</th>
+                                    <th scope="col">Estado</th>
+                                    <th scope="col" class="text-end">Monto</th>
+                                    <th scope="col" class="pe-4 text-end">Comprobante</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pago in historial %}
+                                    <tr>
+                                        <td class="ps-4">
+                                            {{ pago.turno|servicio_del_turno }} de {{ pago.turno.mascota.nombre }}
+                                            <span class="d-block small text-secondary">
+                                                {{ pago.turno.fecha_hora|date:"d/m/Y H:i" }} · {{ pago.turno.veterinario.nombre }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ pago.estado|clase_estado_pago }}">
+                                                {{ pago.get_estado_display }}
+                                            </span>
+                                            {% if pago.estado == 'REEMBOLSADO' %}
+                                                <span class="d-block small text-secondary">
+                                                    La clínica gestiona la devolución.
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">{{ pago.monto_a_pagar|pesos }}</td>
+                                        <td class="pe-4 text-end">
+                                            {% if pago.numero_comprobante %}
+                                                <a href="{% url 'pagos:comprobante' pago.pk %}">
+                                                    {{ pago.numero_comprobante }}
+                                                </a>
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="card tarjeta-triage">
+                <div class="card-body p-4 text-center text-secondary">
+                    Todavía no hay pagos en tu historial.
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

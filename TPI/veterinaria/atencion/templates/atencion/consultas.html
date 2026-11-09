@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load mascotas_extras turnos_extras %}
+{% load mascotas_extras pagos_extras turnos_extras %}
 
 {% block titulo %}Mis consultas - ClinicaVet24{% endblock %}
 {% block body_class %}fondo-verde-claro{% endblock %}
@@ -84,12 +84,39 @@
                                         </span>
                                         {% with pago=turno|ultimo_pago %}
                                             {% if pago %}
-                                                <span class="badge rounded-pill text-bg-light border">
+                                                <span class="badge rounded-pill {{ pago.estado|clase_estado_pago }}">
                                                     Pago: {{ pago.get_estado_display }}
                                                 </span>
                                             {% endif %}
                                         {% endwith %}
                                     </div>
+                                    {% with pago=turno|ultimo_pago %}
+                                        {% if pago %}
+                                            <div class="small mt-2 monto-turno">
+                                                {% if pago.estado == 'CUBIERTO_OS' %}
+                                                    Cubierto por tu obra social
+                                                {% else %}
+                                                    A pagar: <strong>{{ pago.monto_a_pagar|pesos }}</strong>
+                                                    {% if pago.monto_cubierto_os %}
+                                                        <span class="text-secondary">(tu obra social cubre {{ pago.monto_cubierto_os|pesos }})</span>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
+                                            {% if pago|se_puede_pagar %}
+                                                <form method="post" action="{% url 'pagos:pagar' pago.pk %}"
+                                                      class="mt-2">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-brand btn-sm">
+                                                        <i class="bi bi-credit-card me-1"></i>Realizar pago
+                                                    </button>
+                                                </form>
+                                            {% elif pago.numero_comprobante %}
+                                                <a href="{% url 'pagos:comprobante' pago.pk %}" class="small d-inline-block mt-2">
+                                                    Ver comprobante
+                                                </a>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endwith %}
                                     {% if turno|se_puede_cancelar %}
                                         <a href="{% url 'atencion:turno_cancelar' turno.pk %}"
                                            class="btn btn-outline-danger btn-sm mt-3">

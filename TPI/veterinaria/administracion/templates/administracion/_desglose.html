@@ -1,0 +1,19 @@
+{% load pagos_extras %}
+{# Precio, cobertura de la obra social y monto a pagar de un pago. #}
+<dl class="row mb-0 desglose-pago">
+    <dt class="col-7 text-secondary">Precio</dt>
+    <dd class="col-5 text-end">{{ pago.monto_total|pesos }}</dd>
+    <dt class="col-7 text-secondary">
+        Cobertura obra social
+        {% if pago.detalle_cobertura %}
+            <span class="d-block small fw-normal">{{ pago.detalle_cobertura }}</span>
+        {% endif %}
+    </dt>
+    <dd class="col-5 text-end">
+        {% if pago.monto_cubierto_os %}- {{ pago.monto_cubierto_os|pesos }}{% else %}{{ pago.monto_cubierto_os|pesos }}{% endif %}
+    </dd>
+    <dt class="col-7 border-top pt-2">{% if pago.estado == 'PAGADO' %}Monto pagado{% else %}A pagar{% endif %}</dt>
+    <dd class="col-5 text-end border-top pt-2 fw-bold fs-5 mb-0" id="monto-a-pagar">
+        {{ pago.monto_a_pagar|pesos }}
+    </dd>
+</dl>

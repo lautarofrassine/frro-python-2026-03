@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load static pagos_extras %}
+
+{% block titulo %}Comprobante {{ pago.numero_comprobante }} - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block extra_head %}
+<style>
+    @media print {
+        /* Solo el comprobante, en blanco y negro y sin sombras. */
+        .topbar, nav.navbar, footer, .no-imprimir, .alert-dismissible { display: none !important; }
+        body { background: #fff !important; }
+        main section { padding: 0 !important; }
+        .comprobante { box-shadow: none !important; border: 1px solid #000 !important; }
+        .comprobante * { color: #000 !important; }
+        a { text-decoration: none; }
+    }
+</style>
+{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7">
+                <div class="card tarjeta-triage comprobante">
+                    <div class="card-body p-4 p-md-5">
+                        <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="logo-circulo">
+                                    <img src="{% static 'img/patita.svg' %}" alt="">
+                                </span>
+                                <div class="lh-sm">
+                                    <div class="fw-bold fs-5">ClinicaVet24</div>
+                                    <div class="small text-secondary">{{ clinica.direccion }}</div>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="small text-secondary">Comprobante</div>
+                                <div class="fw-bold" id="numero-comprobante">{{ pago.numero_comprobante }}</div>
+                            </div>
+                        </div>
+
+                        {% if pago.estado == 'REEMBOLSADO' %}
+                            <div class="alert alert-warning">
+                                El turno fue cancelado: este pago está reembolsado. La clínica
+                                gestiona la devolución.
+                            </div>
+                        {% endif %}
+
+                        <dl class="row mb-0">
+                            <dt class="col-5 text-secondary">Fecha de pago</dt>
+                            <dd class="col-7">{{ pago.fecha_pago|date:"d/m/Y H:i" }} hs</dd>
+                            <dt class="col-5 text-secondary">Titular</dt>
+                            <dd class="col-7">{{ dueno.nombre }} {{ dueno.apellido }} (DNI {{ dueno.dni }})</dd>
+                            <dt class="col-5 text-secondary">Método</dt>
+                            <dd class="col-7">{{ pago.get_metodo_display }}</dd>
+                        </dl>
+                        <hr>
+                        {% include "administracion/_datos_turno.html" %}
+                        <hr>
+                        {% include "administracion/_desglose.html" %}
+
+                        <div class="d-flex flex-column flex-sm-row gap-2 mt-4 no-imprimir">
+                            <button type="button" class="btn btn-brand" onclick="window.print()">
+                                <i class="bi bi-printer me-1"></i>Imprimir
+                            </button>
+                            <a href="{% url 'pagos:lista' %}" class="btn btn-outline-secondary">Volver a Mis pagos</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

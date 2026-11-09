@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load pagos_extras %}
+
+{% block titulo %}Pago del turno - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7">
+                <div class="card tarjeta-triage">
+                    <div class="card-body p-4 p-md-5">
+                        <h1 class="h3 mb-4">
+                            <i class="bi bi-receipt text-success me-2"></i>Resumen del turno
+                        </h1>
+
+                        {% include "administracion/_datos_turno.html" %}
+                        <hr>
+                        {% include "administracion/_desglose.html" %}
+
+                        <div class="mt-4">
+                            {% if pago.estado == 'CUBIERTO_OS' %}
+                                <div class="alert alert-success mb-3" id="cubierto-os">
+                                    <i class="bi bi-shield-check me-1"></i>
+                                    <strong>Cubierto por tu obra social.</strong>
+                                    No tenés que pagar nada.
+                                </div>
+                                <a href="{% url 'atencion:consultas' %}" class="btn btn-brand btn-lg w-100">
+                                    Ver mis consultas
+                                </a>
+                            {% elif pago.estado == 'PAGADO' %}
+                                <div class="alert alert-success mb-3">
+                                    <i class="bi bi-check-circle me-1"></i>Este turno ya está pagado.
+                                </div>
+                                <a href="{% url 'pagos:comprobante' pago.pk %}" class="btn btn-brand btn-lg w-100">
+                                    Ver comprobante
+                                </a>
+                            {% elif not motivo_no_pagar %}
+                                <div class="d-grid gap-2">
+                                    {% if pago_online_disponible %}
+                                        <form method="post" action="{% url 'pagos:pagar' pago.pk %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-brand btn-lg w-100">
+                                                <i class="bi bi-credit-card me-1"></i>Realizar pago
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <div class="alert alert-warning mb-0">
+                                            El pago online no está disponible en este momento.
+                                        </div>
+                                    {% endif %}
+                                    <a href="{% url 'pagos:en_clinica' pago.pk %}"
+                                       class="btn btn-outline-brand btn-lg">
+                                        <i class="bi bi-shop me-1"></i>Pagar en la clínica el día de la atención
+                                    </a>
+                                </div>
+                                {% if pago_online_disponible %}
+                                    <p class="small text-secondary mt-3 mb-0">
+                                        El pago online es opcional: el turno ya está reservado.
+                                        Vas a pagar con Mercado Pago.
+                                    </p>
+                                {% endif %}
+                            {% else %}
+                                <div class="alert alert-secondary mb-3">{{ motivo_no_pagar }}</div>
+                                <a href="{% url 'pagos:lista' %}" class="btn btn-outline-brand">Ver mis pagos</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

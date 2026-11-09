@@ -84,6 +84,14 @@
                                 </div>
                             </div>
 
+                            {% if dueno.obra_social %}
+                                <p class="small mb-3" id="tope-restante">
+                                    <i class="bi bi-piggy-bank me-1"></i>
+                                    Te quedan <strong>${{ tope_restante|floatformat:"-2g" }}</strong>
+                                    de cobertura de {{ dueno.obra_social.nombre }} este mes
+                                    (tope ${{ dueno.obra_social.tope_mensual|floatformat:"-2g" }}).
+                                </p>
+                            {% endif %}
                             <div id="cobertura" class="alert alert-success" hidden>
                                 <div><strong>Cobertura:</strong> <span id="cobertura-porcentaje"></span>%</div>
                                 <div><strong>Tope mensual:</strong> $<span id="cobertura-tope"></span></div>

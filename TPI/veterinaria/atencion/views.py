@@ -11,6 +11,13 @@ from django.utils.formats import date_format
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.views.decorators.http import require_POST
 
+from administracion.services.pagos import (
+    PagoError,
+    PagoNoEncontrado,
+    pago_de_turno,
+    registrar_cobro_efectivo,
+    turno_con_devolucion_pendiente,
+)
 from administracion.services.obras_sociales import (
     ObraSocialError,
     actualizar_obras_sociales_de_veterinario,
@@ -262,7 +269,10 @@ def turno_confirmar_view(request):
                 f'¡Turno reservado para {mascota.nombre} el {dia} a las '
                 f'{hora}!',
             )
-            return redirect('atencion:consultas')
+            # Resumen con el monto y las opciones de pago.
+            return redirect(
+                'pagos:confirmacion', pago_id=pago_de_turno(turno).pk,
+            )
         horario = horario_para_consulta(codigo, veterinario_id, fecha_hora)
     except SeleccionInvalida:
         raise Http404('Especialidad o veterinario no disponible.')
@@ -300,6 +310,12 @@ def turno_cancelar_view(request, turno_id):
                 request,
                 f'Se canceló el turno de {turno.mascota.nombre}.',
             )
+            if turno_con_devolucion_pendiente(turno):
+                messages.info(
+                    request,
+                    'El turno ya estaba pagado: la clínica se va a '
+                    'comunicar con vos para gestionar la devolución.',
+                )
             return redirect(siguiente)
         turno = obtener_turno_de_dueno(dueno, turno_id)
     except TurnoNoEncontrado:
@@ -505,3 +521,21 @@ def vet_precio_eliminar_view(request, veterinario, precio_id):
     else:
         messages.success(request, 'Se eliminó el cambio de precio.')
     return redirect('veterinario:precios')
+
+
+@require_POST
+@veterinario_requerido
+def vet_cobrar_view(request, veterinario, turno_id, pago_id):
+    """El veterinario del turno registra el cobro en efectivo."""
+    try:
+        pago = registrar_cobro_efectivo(veterinario, pago_id)
+    except PagoNoEncontrado:
+        raise Http404('Pago no encontrado.')
+    except PagoError as error:
+        messages.error(request, str(error))
+    else:
+        messages.success(
+            request,
+            f'Cobro registrado. Comprobante {pago.numero_comprobante}.',
+        )
+    return redirect('veterinario:turno', turno_id=turno_id)

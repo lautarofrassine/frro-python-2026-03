@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load pagos_extras %}
+
+{% block titulo %}Resultado del pago - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <div class="card tarjeta-triage">
+                    <div class="card-body p-4 p-md-5 text-center" id="resultado-{{ resultado }}">
+                        {% if resultado == 'aprobado' %}
+                            <i class="bi bi-check-circle-fill text-success display-4 d-block mb-3"></i>
+                            <h1 class="h3">¡Pago aprobado!</h1>
+                            <p class="text-secondary">
+                                Pagaste {{ pago.monto_a_pagar|pesos }} por el turno de
+                                {{ pago.turno.mascota.nombre }}.
+                            </p>
+                            <a href="{% url 'pagos:comprobante' pago.pk %}" class="btn btn-brand btn-lg">
+                                <i class="bi bi-receipt me-1"></i>Ver comprobante {{ pago.numero_comprobante }}
+                            </a>
+                        {% elif resultado == 'pendiente' %}
+                            <i class="bi bi-hourglass-split text-warning display-4 d-block mb-3"></i>
+                            <h1 class="h3">Pago pendiente</h1>
+                            <p class="text-secondary">
+                                Mercado Pago todavía está procesando el pago. Cuando se
+                                acredite lo vas a ver en Mis pagos.
+                            </p>
+                            <a href="{% url 'pagos:lista' %}" class="btn btn-brand">Ir a Mis pagos</a>
+                        {% else %}
+                            <i class="bi bi-x-circle-fill text-danger display-4 d-block mb-3"></i>
+                            <h1 class="h3">
+                                {% if resultado == 'error' %}No pudimos confirmar el pago{% else %}El pago no se completó{% endif %}
+                            </h1>
+                            <p class="text-secondary">
+                                {% if mensaje %}{{ mensaje }}{% else %}No se realizó ningún cobro. Podés intentarlo de nuevo o pagar en la clínica el día de la atención.{% endif %}
+                            </p>
+                            <div class="d-grid gap-2 col-sm-10 mx-auto">
+                                {% if puede_reintentar %}
+                                    <form method="post" action="{% url 'pagos:pagar' pago.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-brand w-100">
+                                            <i class="bi bi-arrow-repeat me-1"></i>Reintentar el pago
+                                        </button>
+                                    </form>
+                                    <a href="{% url 'pagos:en_clinica' pago.pk %}" class="btn btn-outline-brand">
+                                        Pagar en la clínica el día de la atención
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'pagos:lista' %}" class="btn btn-outline-brand">Ir a Mis pagos</a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

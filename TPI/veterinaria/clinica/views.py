@@ -11,6 +11,10 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 
+from administracion.services.pagos import (
+    pago_de_turno,
+    tope_restante_del_mes,
+)
 from administracion.services.obras_sociales import (
     ObraSocialError,
     asignar_obra_social_a_dueno,
@@ -310,11 +314,10 @@ def vacuna_reservar_view(request, dueno):
                 f'¡Turno de {vacuna.nombre} reservado para '
                 f'{mascota.nombre}!',
             )
-            return redirect(_url_con_parametros(
-                'clinica:vacunas',
-                mascota=mascota.pk,
-                mes=mes_de_turno(turno),
-            ))
+            # Resumen con el monto y las opciones de pago.
+            return redirect(
+                'pagos:confirmacion', pago_id=pago_de_turno(turno).pk,
+            )
         horario = obtener_horario_libre(veterinario_id, fecha_hora)
     except VacunaError as error:
         messages.error(request, str(error))
@@ -423,4 +426,5 @@ def perfil_view(request, dueno):
         'form_password': formularios['password'],
         'dueno': dueno,
         'obras_sociales': obras_sociales,
+        'tope_restante': tope_restante_del_mes(dueno),
     })

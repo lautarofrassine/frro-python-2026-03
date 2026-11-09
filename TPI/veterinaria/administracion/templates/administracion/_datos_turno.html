@@ -1,0 +1,14 @@
+{% load pagos_extras %}
+{# Mascota, servicio, veterinario y fecha del turno de un pago. #}
+<dl class="row mb-0">
+    <dt class="col-5 text-secondary">Mascota</dt>
+    <dd class="col-7">{{ turno.mascota.nombre }}</dd>
+    <dt class="col-5 text-secondary">Servicio</dt>
+    <dd class="col-7">
+        {{ turno|servicio_del_turno }}{% if turno.vacuna %} · {{ turno.vacuna.nombre }}{% endif %}
+    </dd>
+    <dt class="col-5 text-secondary">Veterinario</dt>
+    <dd class="col-7">{{ turno.veterinario.nombre }}</dd>
+    <dt class="col-5 text-secondary">Turno</dt>
+    <dd class="col-7 mb-0">{{ turno.fecha_hora|date:"l j \d\e F, H:i"|capfirst }} hs</dd>
+</dl>

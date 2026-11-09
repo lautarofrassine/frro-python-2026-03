@@ -501,7 +501,7 @@ class VacunasViewsTests(VacunasBase):
         )
         self.assertContains(response, 'Confirmar turno')
 
-    def test_reserva_completa_vuelve_al_calendario_con_la_etiqueta(self):
+    def test_reserva_completa_muestra_el_pago_y_queda_en_el_calendario(self):
         horario = horarios_libres_vacunacion()[0]
         datos = {
             'mascota': self.luna.pk,
@@ -522,14 +522,17 @@ class VacunasViewsTests(VacunasBase):
         self.assertEqual(turno.vacuna, self.triple_felina)
         self.assertRedirects(
             response,
-            f"{reverse('clinica:vacunas')}?mascota={self.luna.pk}"
-            '&mes=2026-10',
+            reverse('pagos:confirmacion', args=[turno.pagos.get().pk]),
         )
         self.assertContains(
             response, '¡Turno de Triple felina reservado para Luna!',
         )
+        calendario = self.client.get(
+            reverse('clinica:vacunas'),
+            {'mascota': self.luna.pk, 'mes': '2026-10'},
+        )
         self.assertEqual(
-            self._dia(response, date(2026, 10, 14))['turnos'], [turno],
+            self._dia(calendario, date(2026, 10, 14))['turnos'], [turno],
         )
 
     def test_post_con_horario_ya_ocupado_vuelve_al_paso_2_con_error(self):
