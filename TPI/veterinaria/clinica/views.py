@@ -3,7 +3,7 @@
 from functools import wraps
 
 from django.contrib import messages
-from django.contrib.auth import login
+from django.contrib.auth import login, update_session_auth_hash
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
@@ -13,11 +13,20 @@ from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 
 from administracion.services.obras_sociales import (
     ObraSocialError,
+    asignar_obra_social_a_dueno,
     listar_obras_sociales_activas,
 )
 from atencion.permisos import rechazar_veterinarios
 from atencion.services.veterinarios import obtener_veterinario_de_usuario
-from clinica.forms import LoginForm, MascotaForm, PerfilForm, RegistroForm
+from clinica.forms import (
+    CambiarEmailForm,
+    CambiarPasswordForm,
+    DatosPersonalesForm,
+    LoginForm,
+    MascotaForm,
+    ObraSocialForm,
+    RegistroForm,
+)
 from clinica.services.mascotas import (
     MascotaError,
     MascotaNoEncontrada,
@@ -28,8 +37,11 @@ from clinica.services.mascotas import (
     registrar_mascota,
 )
 from clinica.services.usuarios import (
+    CuentaError,
     RegistroError,
-    actualizar_perfil_de_dueno,
+    actualizar_datos_personales,
+    cambiar_email,
+    cambiar_password,
     obtener_dueno_de_usuario,
     registrar_dueno,
 )
@@ -315,25 +327,100 @@ def vacuna_reservar_view(request, dueno):
     })
 
 
+def _guardar_datos_personales(request, dueno, obras_sociales):
+    form = DatosPersonalesForm(request.POST)
+    if form.is_valid():
+        try:
+            actualizar_datos_personales(dueno, **form.cleaned_data)
+        except RegistroError as error:
+            form.add_error(error.campo, str(error))
+        else:
+            return form, 'Se guardaron tus datos personales.'
+    return form, None
+
+
+def _guardar_obra_social(request, dueno, obras_sociales):
+    form = ObraSocialForm(request.POST, obras_sociales=obras_sociales)
+    if form.is_valid():
+        try:
+            asignar_obra_social_a_dueno(dueno, **form.datos_obra_social())
+        except ObraSocialError as error:
+            form.add_error(error.campo, str(error))
+        else:
+            return form, 'Se guardó tu obra social.'
+    return form, None
+
+
+def _guardar_email(request, dueno, obras_sociales):
+    form = CambiarEmailForm(request.POST)
+    if form.is_valid():
+        try:
+            cambiar_email(
+                dueno,
+                form.cleaned_data['nuevo_email'],
+                form.cleaned_data['password_actual'],
+            )
+        except CuentaError as error:
+            form.add_error(error.campo, str(error))
+        else:
+            return form, (
+                f'Tu email ahora es {dueno.email}. Usalo para ingresar.'
+            )
+    return form, None
+
+
+def _guardar_password(request, dueno, obras_sociales):
+    form = CambiarPasswordForm(request.user, request.POST)
+    if form.is_valid():
+        try:
+            cambiar_password(
+                request.user,
+                form.cleaned_data['old_password'],
+                form.cleaned_data['new_password1'],
+            )
+        except CuentaError as error:
+            form.add_error(error.campo, str(error))
+        else:
+            # Sin esto, cambiar la contraseña cierra la sesion.
+            update_session_auth_hash(request, request.user)
+            return form, 'Se cambió tu contraseña.'
+    return form, None
+
+
+# Cada seccion de Mi perfil tiene su formulario: guardar una no toca las
+# demas. El POST indica cual con el campo oculto "seccion".
+GUARDAR_SECCION_PERFIL = {
+    'datos': _guardar_datos_personales,
+    'obra_social': _guardar_obra_social,
+    'email': _guardar_email,
+    'password': _guardar_password,
+}
+
+
 @dueno_requerido
 def perfil_view(request, dueno):
     obras_sociales = listar_obras_sociales_activas()
+    formularios = {
+        'datos': DatosPersonalesForm.desde_dueno(dueno),
+        'obra_social': ObraSocialForm.desde_dueno(dueno, obras_sociales),
+        'email': CambiarEmailForm(),
+        'password': CambiarPasswordForm(request.user),
+    }
     if request.method == 'POST':
-        form = PerfilForm(request.POST, obras_sociales=obras_sociales)
-        if form.is_valid():
-            try:
-                actualizar_perfil_de_dueno(dueno, **form.datos_perfil())
-            except (RegistroError, ObraSocialError) as error:
-                form.add_error(error.campo, str(error))
-            else:
-                messages.success(
-                    request, 'Se guardaron los cambios de tu perfil.',
-                )
-                return redirect('clinica:perfil')
-    else:
-        form = PerfilForm.desde_dueno(dueno, obras_sociales)
+        seccion = request.POST.get('seccion')
+        guardar = GUARDAR_SECCION_PERFIL.get(seccion)
+        if guardar is None:
+            return redirect('clinica:perfil')
+        form, mensaje = guardar(request, dueno, obras_sociales)
+        if mensaje:
+            messages.success(request, mensaje)
+            return redirect('clinica:perfil')
+        formularios[seccion] = form
     return render(request, 'clinica/perfil.html', {
-        'form': form,
+        'form_datos': formularios['datos'],
+        'form_obra_social': formularios['obra_social'],
+        'form_email': formularios['email'],
+        'form_password': formularios['password'],
         'dueno': dueno,
         'obras_sociales': obras_sociales,
     })

@@ -3,21 +3,30 @@ import re
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 
-from administracion.services.obras_sociales import (
-    asignar_obra_social_a_dueno,
-)
 from clinica.models import Dueno
 
 MENSAJE_EMAIL_EN_USO = 'Este email ya está en uso.'
 MENSAJE_DNI_REGISTRADO = 'Este DNI ya está registrado.'
 MENSAJE_DNI_INVALIDO = 'El DNI debe tener 7 u 8 dígitos.'
+MENSAJE_PASSWORD_ACTUAL = 'La contraseña actual no es correcta.'
 
 
 class RegistroError(Exception):
     """Error de negocio al registrar un dueño. `campo` indica a que
     campo del formulario corresponde, si se puede determinar."""
+
+    def __init__(self, mensaje, campo=None):
+        super().__init__(mensaje)
+        self.campo = campo
+
+
+class CuentaError(Exception):
+    """Error al cambiar el email o la contraseña. `campo` indica a que
+    campo del formulario corresponde."""
 
     def __init__(self, mensaje, campo=None):
         super().__init__(mensaje)
@@ -125,11 +134,10 @@ def obtener_dueno_de_usuario(user):
 
 
 @transaction.atomic
-def actualizar_perfil_de_dueno(dueno, nombre, apellido, telefono,
-                               obra_social_id, numero_afiliado=''):
-    """Guarda los datos editables del dueño (el email y el DNI no se
-    cambian) y su obra social, todo junto o nada. Lanza RegistroError
-    si falta un dato y ObraSocialError si la obra social no vale."""
+def actualizar_datos_personales(dueno, nombre, apellido, telefono):
+    """Guarda nombre, apellido y telefono del dueño (el DNI no se
+    cambia; el email, con cambiar_email). Lanza RegistroError si falta
+    un dato."""
     datos = {
         'nombre': (nombre or '').strip(),
         'apellido': (apellido or '').strip(),
@@ -146,4 +154,61 @@ def actualizar_perfil_de_dueno(dueno, nombre, apellido, telefono,
     usuario.first_name = datos['nombre']
     usuario.last_name = datos['apellido']
     usuario.save(update_fields=['first_name', 'last_name'])
-    return asignar_obra_social_a_dueno(dueno, obra_social_id, numero_afiliado)
+    return dueno
+
+
+def _email_en_uso_por_otro(email, dueno):
+    User = get_user_model()
+    return (
+        Dueno.objects.filter(email__iexact=email)
+        .exclude(pk=dueno.pk).exists()
+        or User.objects.filter(
+            Q(email__iexact=email) | Q(username__iexact=email),
+        ).exclude(pk=dueno.usuario_id).exists()
+    )
+
+
+def cambiar_email(dueno, nuevo_email, password_actual):
+    """Cambia el email del dueño, que tambien es su usuario para
+    ingresar. Pide la contraseña actual. Actualiza email y username del
+    User y el email del Dueno en la misma transaccion. Lanza CuentaError
+    si el email no es valido, ya es el suyo o lo usa otra persona, o si
+    la contraseña no es correcta; en ese caso no cambia nada."""
+    email = normalizar_email(nuevo_email or '')
+    try:
+        validate_email(email)
+    except ValidationError:
+        raise CuentaError('Ingresá un email válido.', 'nuevo_email')
+    usuario = dueno.usuario
+    if not usuario.check_password(password_actual or ''):
+        raise CuentaError(MENSAJE_PASSWORD_ACTUAL, 'password_actual')
+    if email == normalizar_email(dueno.email):
+        raise CuentaError('Ese ya es tu email.', 'nuevo_email')
+    if _email_en_uso_por_otro(email, dueno):
+        raise CuentaError(MENSAJE_EMAIL_EN_USO, 'nuevo_email')
+    try:
+        with transaction.atomic():
+            usuario.email = email
+            usuario.username = email
+            usuario.save(update_fields=['email', 'username'])
+            dueno.email = email
+            dueno.save(update_fields=['email'])
+    except IntegrityError:
+        # Otro usuario tomo ese email al mismo tiempo.
+        raise CuentaError(MENSAJE_EMAIL_EN_USO, 'nuevo_email')
+    return dueno
+
+
+def cambiar_password(user, actual, nueva):
+    """Cambia la contraseña (queda hasheada) si la actual es correcta y
+    la nueva cumple los AUTH_PASSWORD_VALIDATORS. Lanza CuentaError.
+    La vista se encarga de mantener la sesion iniciada."""
+    if not user.check_password(actual or ''):
+        raise CuentaError(MENSAJE_PASSWORD_ACTUAL, 'old_password')
+    try:
+        validate_password(nueva, user=user)
+    except ValidationError as exc:
+        raise CuentaError(' '.join(exc.messages), 'new_password2')
+    user.set_password(nueva)
+    user.save(update_fields=['password'])
+    return user

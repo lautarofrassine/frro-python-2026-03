@@ -9,57 +9,58 @@
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <h1 class="h2 mb-4">
-                    <i class="bi bi-person-vcard text-success me-2"></i>Mi perfil
+                    <i class="bi bi-person-gear text-success me-2"></i>Mi perfil
                 </h1>
 
-                <form method="post" novalidate>
-                    {% csrf_token %}
-                    {% for error in form.non_field_errors %}
-                        <div class="alert alert-danger">{{ error }}</div>
-                    {% endfor %}
+                {# Cada seccion es un formulario aparte: guardar una no toca las demas. #}
 
-                    <div class="card tarjeta-triage mb-4">
-                        <div class="card-body p-4">
-                            <h2 class="h5 mb-3">Mis datos</h2>
+                <div class="card tarjeta-triage mb-4" id="datos-personales">
+                    <div class="card-body p-4">
+                        <h2 class="h5 mb-3">
+                            <i class="bi bi-person-vcard text-success me-2"></i>Datos personales
+                        </h2>
+                        <form method="post" novalidate>
+                            {% csrf_token %}
+                            <input type="hidden" name="seccion" value="datos">
                             <div class="row">
                                 <div class="col-md-6">
-                                    {% include "includes/campo_form.html" with campo=form.nombre %}
+                                    {% include "includes/campo_form.html" with campo=form_datos.nombre %}
                                 </div>
                                 <div class="col-md-6">
-                                    {% include "includes/campo_form.html" with campo=form.apellido %}
+                                    {% include "includes/campo_form.html" with campo=form_datos.apellido %}
                                 </div>
                                 <div class="col-md-6">
-                                    {% include "includes/campo_form.html" with campo=form.telefono %}
+                                    {% include "includes/campo_form.html" with campo=form_datos.telefono %}
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <span class="form-label fw-semibold d-block">Email</span>
-                                    <input type="text" class="form-control" value="{{ dueno.email }}"
-                                           readonly disabled aria-label="Email">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <span class="form-label fw-semibold d-block">DNI</span>
-                                    <input type="text" class="form-control" value="{{ dueno.dni }}"
-                                           readonly disabled aria-label="DNI">
+                                    <label for="dni-solo-lectura" class="form-label fw-semibold">DNI</label>
+                                    <input type="text" id="dni-solo-lectura" class="form-control"
+                                           value="{{ dueno.dni }}" readonly disabled>
+                                    <div class="form-text">El DNI no se puede cambiar.</div>
                                 </div>
                             </div>
-                            <p class="form-text mb-0">
-                                El email y el DNI no se pueden cambiar.
-                            </p>
-                        </div>
+                            <button type="submit" class="btn btn-brand">Guardar</button>
+                        </form>
                     </div>
+                </div>
 
-                    <div class="card tarjeta-triage mb-4">
-                        <div class="card-body p-4">
-                            <h2 class="h5 mb-3">Obra social</h2>
+                <div class="card tarjeta-triage mb-4" id="obra-social">
+                    <div class="card-body p-4">
+                        <h2 class="h5 mb-3">
+                            <i class="bi bi-shield-check text-success me-2"></i>Obra social
+                        </h2>
+                        <form method="post" novalidate>
+                            {% csrf_token %}
+                            <input type="hidden" name="seccion" value="obra_social">
                             <div class="row">
                                 <div class="col-md-7 mb-3">
-                                    <label for="{{ form.obra_social.id_for_label }}"
+                                    <label for="{{ form_obra_social.obra_social.id_for_label }}"
                                            class="form-label fw-semibold">
-                                        {{ form.obra_social.label }}
+                                        {{ form_obra_social.obra_social.label }}
                                     </label>
                                     {# Las opciones llevan sus datos para mostrar la cobertura. #}
-                                    <select name="{{ form.obra_social.html_name }}"
-                                            id="{{ form.obra_social.id_for_label }}"
+                                    <select name="{{ form_obra_social.obra_social.html_name }}"
+                                            id="{{ form_obra_social.obra_social.id_for_label }}"
                                             class="form-select">
                                         <option value="">Sin obra social</option>
                                         {% for obra in obras_sociales %}
@@ -67,40 +68,88 @@
                                                     data-porcentaje="{{ obra.porcentaje_cobertura|floatformat:'0' }}"
                                                     data-tope="{{ obra.tope_mensual|floatformat:'0g' }}"
                                                     data-servicios="{{ obra.servicios_cubiertos|join:', '|default:'Ninguno' }}"
-                                                    {% if form.obra_social.value|stringformat:'s' == obra.pk|stringformat:'s' %}selected{% endif %}>
+                                                    {% if form_obra_social.obra_social.value|stringformat:'s' == obra.pk|stringformat:'s' %}selected{% endif %}>
                                                 {{ obra.nombre }}
                                             </option>
                                         {% endfor %}
                                     </select>
-                                    {% for error in form.obra_social.errors %}
+                                    {% for error in form_obra_social.obra_social.errors %}
                                         <div class="text-danger small mt-1">
                                             <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
                                         </div>
                                     {% endfor %}
                                 </div>
                                 <div class="col-md-5" id="bloque-afiliado">
-                                    {% include "includes/campo_form.html" with campo=form.numero_afiliado %}
+                                    {% include "includes/campo_form.html" with campo=form_obra_social.numero_afiliado %}
                                 </div>
                             </div>
 
-                            <div id="cobertura" class="alert alert-success mb-0" hidden>
+                            <div id="cobertura" class="alert alert-success" hidden>
                                 <div><strong>Cobertura:</strong> <span id="cobertura-porcentaje"></span>%</div>
                                 <div><strong>Tope mensual:</strong> $<span id="cobertura-tope"></span></div>
                                 <div><strong>Cubre:</strong> <span id="cobertura-servicios"></span></div>
                             </div>
-                        </div>
+                            <button type="submit" class="btn btn-brand">Guardar</button>
+                        </form>
                     </div>
+                </div>
 
-                    <div class="d-flex flex-column flex-sm-row gap-2">
-                        <button type="submit" class="btn btn-brand btn-lg flex-fill">
-                            Guardar cambios
-                        </button>
-                        <a href="{% url 'clinica:panel' %}"
-                           class="btn btn-outline-secondary btn-lg">
-                            Volver a mi panel
-                        </a>
+                <div class="card tarjeta-triage mb-4" id="cambiar-email">
+                    <div class="card-body p-4">
+                        <h2 class="h5 mb-1">
+                            <i class="bi bi-envelope text-success me-2"></i>Cambiar email
+                        </h2>
+                        <p class="text-secondary small mb-3">
+                            Tu email actual es <strong class="text-break">{{ dueno.email }}</strong>.
+                            Es el que usás para ingresar.
+                        </p>
+                        <form method="post" novalidate>
+                            {% csrf_token %}
+                            <input type="hidden" name="seccion" value="email">
+                            {% for error in form_email.non_field_errors %}
+                                <div class="alert alert-danger">{{ error }}</div>
+                            {% endfor %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {% include "includes/campo_form.html" with campo=form_email.nuevo_email %}
+                                </div>
+                                <div class="col-md-6">
+                                    {% include "includes/campo_form.html" with campo=form_email.password_actual %}
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-brand">Guardar</button>
+                        </form>
                     </div>
-                </form>
+                </div>
+
+                <div class="card tarjeta-triage mb-4" id="cambiar-password">
+                    <div class="card-body p-4">
+                        <h2 class="h5 mb-3">
+                            <i class="bi bi-key text-success me-2"></i>Cambiar contraseña
+                        </h2>
+                        <form method="post" novalidate>
+                            {% csrf_token %}
+                            <input type="hidden" name="seccion" value="password">
+                            {% for error in form_password.non_field_errors %}
+                                <div class="alert alert-danger">{{ error }}</div>
+                            {% endfor %}
+                            {% include "includes/campo_form.html" with campo=form_password.old_password %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {% include "includes/campo_form.html" with campo=form_password.new_password1 %}
+                                </div>
+                                <div class="col-md-6">
+                                    {% include "includes/campo_form.html" with campo=form_password.new_password2 %}
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-brand">Guardar</button>
+                        </form>
+                    </div>
+                </div>
+
+                <a href="{% url 'clinica:panel' %}" class="btn btn-outline-secondary">
+                    Volver a mi panel
+                </a>
             </div>
         </div>
     </div>
@@ -110,7 +159,7 @@
     // Muestra la cobertura de la obra social elegida y oculta el numero
     // de afiliado si se elige "Sin obra social".
     (function () {
-        var select = document.getElementById('{{ form.obra_social.id_for_label }}');
+        var select = document.getElementById('{{ form_obra_social.obra_social.id_for_label }}');
         var cobertura = document.getElementById('cobertura');
         var afiliado = document.getElementById('bloque-afiliado');
         function actualizar() {

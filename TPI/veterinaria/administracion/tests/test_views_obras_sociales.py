@@ -65,9 +65,9 @@ class PermisosTests(ObrasSocialesVistasBase):
 class PerfilTests(ObrasSocialesVistasBase):
 
     def _datos(self, **cambios):
+        """POST de la seccion Obra social de Mi perfil."""
         datos = {
-            'nombre': 'Ana María', 'apellido': 'Gómez',
-            'telefono': '341 555-1111',
+            'seccion': 'obra_social',
             'obra_social': str(self.vetsalud.pk), 'numero_afiliado': 'A-77',
         }
         datos.update(cambios)
@@ -88,19 +88,16 @@ class PerfilTests(ObrasSocialesVistasBase):
         self.assertIn(self.dueno.email, contenido)
         self.assertIn(self.dueno.dni, contenido)
 
-    def test_guarda_datos_y_obra_social(self):
+    def test_guarda_la_obra_social(self):
         self.como_dueno()
 
         response = self.client.post(URL_PERFIL, self._datos(), follow=True)
 
         self.assertRedirects(response, URL_PERFIL)
-        self.assertContains(response, 'Se guardaron los cambios de tu perfil.')
+        self.assertContains(response, 'Se guardó tu obra social.')
         self.dueno.refresh_from_db()
-        self.assertEqual(self.dueno.nombre, 'Ana María')
-        self.assertEqual(self.dueno.telefono, '341 555-1111')
         self.assertEqual(self.dueno.obra_social, self.vetsalud)
         self.assertEqual(self.dueno.numero_afiliado, 'A-77')
-        self.assertEqual(self.dueno.usuario.first_name, 'Ana María')
 
     def test_obra_social_sin_numero_muestra_el_error(self):
         self.como_dueno()

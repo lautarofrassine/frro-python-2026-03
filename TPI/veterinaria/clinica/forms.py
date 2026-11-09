@@ -1,5 +1,9 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm, UsernameField
+from django.contrib.auth.forms import (
+    AuthenticationForm,
+    PasswordChangeForm,
+    UsernameField,
+)
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 
@@ -214,26 +218,43 @@ class MascotaForm(forms.Form):
         )}
 
 
-class PerfilForm(forms.Form):
-    """Datos editables del dueño (el email y el DNI son solo lectura) y
-    su obra social. Solo valida formato; las reglas las validan los
-    services."""
+TELEFONO_VALIDATOR = RegexValidator(
+    r'^[\d\s()+-]{6,20}$',
+    'Ingresá un teléfono válido (números, espacios, +, - o paréntesis).',
+)
+
+
+def _con_clase_bootstrap(form):
+    for campo in form.fields.values():
+        campo.widget.attrs.setdefault('class', 'form-control')
+
+
+class DatosPersonalesForm(forms.Form):
+    """Mi perfil > Datos personales (el DNI es solo lectura)."""
 
     nombre = forms.CharField(label='Nombre', max_length=100)
     apellido = forms.CharField(label='Apellido', max_length=100)
     telefono = forms.CharField(
-        label='Teléfono',
-        max_length=20,
-        validators=[
-            RegexValidator(
-                r'^[\d\s()+-]{6,20}$',
-                'Ingresá un teléfono válido (números, espacios, +, - o '
-                'paréntesis).',
-            ),
-        ],
+        label='Teléfono', max_length=20, validators=[TELEFONO_VALIDATOR],
     )
-    # Las opciones se cargan en __init__ con las obras sociales activas
-    # que la vista obtiene del service.
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _con_clase_bootstrap(self)
+
+    @classmethod
+    def desde_dueno(cls, dueno):
+        return cls(initial={
+            'nombre': dueno.nombre,
+            'apellido': dueno.apellido,
+            'telefono': dueno.telefono,
+        })
+
+
+class ObraSocialForm(forms.Form):
+    """Mi perfil > Obra social. Las opciones son las obras sociales
+    activas que la vista obtiene del service."""
+
     obra_social = forms.ChoiceField(
         label='Obra social', required=False, choices=[],
     )
@@ -248,28 +269,57 @@ class PerfilForm(forms.Form):
             [('', 'Sin obra social')]
             + [(str(obra.pk), obra.nombre) for obra in obras_sociales]
         )
-        for campo in self.fields.values():
-            campo.widget.attrs.setdefault('class', 'form-control')
+        _con_clase_bootstrap(self)
         self.fields['obra_social'].widget.attrs['class'] = 'form-select'
 
     @classmethod
     def desde_dueno(cls, dueno, obras_sociales):
         return cls(obras_sociales=obras_sociales, initial={
-            'nombre': dueno.nombre,
-            'apellido': dueno.apellido,
-            'telefono': dueno.telefono,
             'obra_social': (
                 str(dueno.obra_social_id) if dueno.obra_social_id else ''
             ),
             'numero_afiliado': dueno.numero_afiliado,
         })
 
-    def datos_perfil(self):
-        """Argumentos para clinica.services.usuarios
-        .actualizar_perfil_de_dueno."""
-        datos = {
-            campo: self.cleaned_data[campo]
-            for campo in ('nombre', 'apellido', 'telefono', 'numero_afiliado')
+    def datos_obra_social(self):
+        """Argumentos para asignar_obra_social_a_dueno."""
+        return {
+            'obra_social_id': self.cleaned_data['obra_social'] or None,
+            'numero_afiliado': self.cleaned_data['numero_afiliado'],
         }
-        datos['obra_social_id'] = self.cleaned_data['obra_social'] or None
-        return datos
+
+
+class CambiarEmailForm(forms.Form):
+    """Mi perfil > Cambiar email. Las reglas (email en uso, contraseña)
+    las valida clinica.services.usuarios.cambiar_email."""
+
+    nuevo_email = forms.EmailField(
+        label='Nuevo email',
+        max_length=254,
+        widget=forms.EmailInput(attrs={'autocomplete': 'email'}),
+    )
+    password_actual = forms.CharField(
+        label='Contraseña actual',
+        strip=False,
+        widget=forms.PasswordInput(
+            attrs={'autocomplete': 'current-password'},
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _con_clase_bootstrap(self)
+
+
+class CambiarPasswordForm(PasswordChangeForm):
+    """Mi perfil > Cambiar contraseña: el PasswordChangeForm de Django
+    (con sus validadores) con estilos del sitio. Guarda el service
+    cambiar_password, no este formulario."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['old_password'].label = 'Contraseña actual'
+        self.fields['old_password'].widget.attrs.pop('autofocus', None)
+        self.fields['new_password1'].label = 'Nueva contraseña'
+        self.fields['new_password2'].label = 'Repetir nueva contraseña'
+        _con_clase_bootstrap(self)
