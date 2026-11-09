@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block titulo %}Mis precios - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <h1 class="h2 mb-2">
+            <i class="bi bi-cash-coin text-success me-2"></i>Mis precios
+        </h1>
+        <p class="text-secondary mb-4">
+            Los cambios de precio rigen como mínimo 14 días después de
+            cargarlos. Los turnos ya reservados mantienen el precio con el
+            que se reservaron.
+        </p>
+
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="card tarjeta-triage mb-4">
+                    <div class="card-body p-4">
+                        <h2 class="h6 text-uppercase text-secondary mb-2">
+                            Precio vigente hoy
+                        </h2>
+                        <div class="display-6 fw-bold text-success" id="precio-vigente">
+                            ${{ historial.monto_vigente|floatformat:"0g" }}
+                        </div>
+                        <div class="small text-secondary">
+                            {% if historial.vigente %}
+                                Desde el {{ historial.vigente.vigente_desde|date:"d/m/Y" }}
+                            {% else %}
+                                Precio de la especialidad
+                                ({{ veterinario.get_especialidad_display }})
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card tarjeta-triage mb-4">
+                    <div class="card-body p-4">
+                        <h2 class="h5 mb-3">Cambios programados</h2>
+                        {% for precio in historial.programados %}
+                            <div class="d-flex justify-content-between align-items-center
+                                        gap-2 border rounded-4 p-3 mb-2">
+                                <div>
+                                    <div class="fw-bold">${{ precio.monto|floatformat:"0g" }}</div>
+                                    <div class="small text-secondary">
+                                        Desde el {{ precio.vigente_desde|date:"d/m/Y" }}
+                                    </div>
+                                </div>
+                                <form method="post"
+                                      action="{% url 'veterinario:precio_eliminar' precio.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                        <i class="bi bi-trash me-1"></i>Eliminar
+                                    </button>
+                                </form>
+                            </div>
+                        {% empty %}
+                            <p class="text-secondary mb-0">No tenés cambios programados.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="card tarjeta-triage">
+                    <div class="card-body p-4">
+                        <h2 class="h5 mb-3">Precios anteriores</h2>
+                        {% if historial.anteriores %}
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Desde</th>
+                                            <th scope="col" class="text-end">Precio</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for precio in historial.anteriores %}
+                                            <tr>
+                                                <td>{{ precio.vigente_desde|date:"d/m/Y" }}</td>
+                                                <td class="text-end">${{ precio.monto|floatformat:"0g" }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-secondary mb-0">Todavía no hay precios anteriores.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card tarjeta-triage">
+                    <div class="card-body p-4">
+                        <h2 class="h5 mb-3">Programar nuevo precio</h2>
+                        <form method="post" novalidate>
+                            {% csrf_token %}
+                            {% for error in form.non_field_errors %}
+                                <div class="alert alert-danger">{{ error }}</div>
+                            {% endfor %}
+                            {% include "includes/campo_form.html" with campo=form.monto %}
+                            {% include "includes/campo_form.html" with campo=form.vigente_desde %}
+                            <button type="submit" class="btn btn-brand w-100">
+                                Programar precio
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

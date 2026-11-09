@@ -84,6 +84,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link{% if vista == 'precios' %} active" aria-current="page{% endif %}"
+                           href="{% url 'veterinario:precios' %}">
+                            Mis precios
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link{% if vista == 'obras_sociales' %} active" aria-current="page{% endif %}"
                            href="{% url 'veterinario:obras_sociales' %}">
                             Obras sociales
@@ -143,6 +149,13 @@
                                        href="{% url 'veterinario:historias' %}">
                                         <i class="bi bi-journal-medical me-1"></i>
                                         Historias clínicas
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item"
+                                       href="{% url 'veterinario:precios' %}">
+                                        <i class="bi bi-cash-coin me-1"></i>
+                                        Mis precios
                                     </a>
                                 </li>
                                 {% else %}

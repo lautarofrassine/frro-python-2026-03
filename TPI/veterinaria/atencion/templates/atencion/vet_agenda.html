@@ -17,6 +17,12 @@
                     {{ veterinario.get_especialidad_display }}
                 </div>
                 <div class="small text-secondary">
+                    <i class="bi bi-cash-coin me-1"></i>
+                    Precio por atención:
+                    <strong>${{ precio_vigente|floatformat:"0g" }}</strong>
+                    <a href="{% url 'veterinario:precios' %}" class="ms-1">Mis precios</a>
+                </div>
+                <div class="small text-secondary">
                     <i class="bi bi-shield-check me-1"></i>
                     {% if obras_sociales %}
                         Atendés: {{ obras_sociales|join:", " }}

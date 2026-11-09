@@ -569,6 +569,7 @@ class NavegacionVeterinarioTests(VeterinarioBase):
         self.assertEqual(
             [href for href, _ in self._links_del_menu(contenido)],
             [URL_AGENDA, reverse('veterinario:historias'),
+             reverse('veterinario:precios'),
              reverse('veterinario:obras_sociales')],
         )
         for ancla in self.LINKS_LANDING:
@@ -590,6 +591,7 @@ class NavegacionVeterinarioTests(VeterinarioBase):
              historias),
             (reverse('veterinario:obras_sociales'),
              reverse('veterinario:obras_sociales')),
+            (reverse('veterinario:precios'), reverse('veterinario:precios')),
         )
         for url, activo in casos:
             with self.subTest(url=url):

@@ -36,7 +36,7 @@ OBRAS_SOCIALES_INICIALES = [
     },
     {
         'nombre': 'Huellitas Total',
-        'porcentaje_cobertura': Decimal('80'),
+        'porcentaje_cobertura': Decimal('100'),
         'tope_mensual': Decimal('80000'),
         'cubre_consultas': True,
         'cubre_vacunacion': True,
@@ -122,11 +122,13 @@ def actualizar_obras_sociales_de_veterinario(veterinario, obras_sociales_ids):
 @transaction.atomic
 def cargar_obras_sociales_iniciales():
     """Crea las obras sociales de OBRAS_SOCIALES_INICIALES que todavia no
-    existen (se busca por nombre). Devuelve {'creadas', 'existentes'}."""
+    existen (se busca por nombre) y a las que ya existen les actualiza
+    cobertura, tope y servicios con los de la lista (no toca `activa`).
+    Devuelve {'creadas', 'existentes'}."""
     resumen = {'creadas': 0, 'existentes': 0}
     for datos in OBRAS_SOCIALES_INICIALES:
         datos = dict(datos)
-        _, creada = ObraSocial.objects.get_or_create(
+        _, creada = ObraSocial.objects.update_or_create(
             nombre=datos.pop('nombre'), defaults=datos,
         )
         resumen['creadas' if creada else 'existentes'] += 1

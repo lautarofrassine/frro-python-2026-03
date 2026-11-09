@@ -4,13 +4,18 @@ vacunas pasan por aca."""
 import warnings
 from collections import defaultdict
 from datetime import date, datetime, time, timedelta
-from decimal import Decimal
 
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from administracion.models import Pago
 from atencion.models import HorarioAtencion, NivelUrgencia, Turno, Veterinario
+from atencion.services.precios import (  # noqa: F401 (se reexportan)
+    PRECIO_BASE,
+    PRECIO_POR_ESPECIALIDAD,
+    precio_de_especialidad,
+    precio_vigente,
+)
 from clinica.models import Mascota
 from clinica.services.mascotas import (
     MascotaNoEncontrada,
@@ -28,21 +33,9 @@ TIPO_TRIAGE = 'Triage'
 TIPO_VACUNACION = 'Vacunación'
 TIPO_GUARDIA = 'Guardia'
 
-# Precio de la consulta segun la especialidad del veterinario, en pesos.
-# Valores ficticios; este es el unico lugar donde se definen.
+# Los precios (por veterinario, con historial) estan en
+# atencion.services.precios.
 _E = Veterinario.Especialidad
-PRECIO_POR_ESPECIALIDAD = {
-    _E.CLINICA_GENERAL: Decimal('15000'),
-    _E.CARDIOLOGIA: Decimal('28000'),
-    _E.DERMATOLOGIA: Decimal('22000'),
-    _E.TRAUMATOLOGIA: Decimal('25000'),
-    _E.GASTROENTEROLOGIA: Decimal('24000'),
-    _E.OFTALMOLOGIA: Decimal('23000'),
-    _E.VACUNACION: Decimal('12000'),
-    _E.GUARDIA: Decimal('30000'),
-}
-# Para veterinarios con una especialidad fuera de la lista.
-PRECIO_BASE = PRECIO_POR_ESPECIALIDAD[_E.CLINICA_GENERAL]
 
 # Un turno esta "reservado" mientras esta PENDIENTE o EN_CURSO.
 ESTADOS_RESERVADO = (Turno.Estado.PENDIENTE, Turno.Estado.EN_CURSO)
@@ -195,14 +188,17 @@ def _obtener_nivel_urgencia(nivel):
     )
 
 
-def precio_de_turno(veterinario):
-    return PRECIO_POR_ESPECIALIDAD.get(veterinario.especialidad, PRECIO_BASE)
+def precio_de_turno(veterinario, fecha_hora):
+    """Precio del veterinario vigente en la fecha del turno."""
+    return precio_vigente(veterinario, fecha_hora)
 
 
 def reservar_turno(dueno, mascota_id, veterinario_id, fecha_hora,
                    nivel_urgencia=None, vacuna=None, motivo='', tipo=None):
     """Reserva un turno para una mascota del dueño y crea su Pago
-    PENDIENTE con el precio de la especialidad. Todo o nada.
+    PENDIENTE con el precio del veterinario vigente en la fecha del
+    turno (queda fijo: un cambio de precio posterior no lo modifica).
+    Todo o nada.
 
     Valida que la mascota sea del dueño y este activa, que el
     veterinario este activo, que el horario sea futuro, este dentro de
@@ -262,7 +258,7 @@ def reservar_turno(dueno, mascota_id, veterinario_id, fecha_hora,
             )
             Pago.objects.create(
                 turno=turno,
-                monto_total=precio_de_turno(veterinario),
+                monto_total=precio_de_turno(veterinario, fecha_hora),
                 estado=Pago.Estado.PENDIENTE,
             )
     except IntegrityError:
@@ -305,7 +301,7 @@ def especialidades_para_turno():
             'codigo': especialidad.value,
             'nombre': especialidad.label,
             'descripcion': DESCRIPCION_POR_ESPECIALIDAD.get(especialidad, ''),
-            'precio': PRECIO_POR_ESPECIALIDAD.get(especialidad, PRECIO_BASE),
+            'precio': precio_de_especialidad(especialidad),
         }
         for especialidad in Veterinario.Especialidad
         if especialidad in con_veterinarios
@@ -382,15 +378,25 @@ def semana_de_turnos(especialidad, veterinario_id=None, semana=None):
 
     horarios_por_dia = defaultdict(list)
     horas_vistas = set()
+    veterinarios = {
+        v.pk: v for v in veterinarios_de_especialidad(especialidad)
+    }
+    precios = {}  # (veterinario_id, dia) -> precio vigente ese dia
     for horario in libres:
         if veterinario is None:
             if horario['fecha_hora'] in horas_vistas:
                 continue
             horas_vistas.add(horario['fecha_hora'])
         dia = timezone.localtime(horario['fecha_hora']).date()
+        clave = (horario['veterinario_id'], dia)
+        if clave not in precios:
+            precios[clave] = precio_vigente(
+                veterinarios[horario['veterinario_id']], dia,
+            )
         horarios_por_dia[dia].append({
             **horario,
             'veterinario_apellido': horario['veterinario_nombre'].split()[-1],
+            'precio': precios[clave],
         })
 
     dias = [
@@ -412,7 +418,7 @@ def semana_de_turnos(especialidad, veterinario_id=None, semana=None):
     return {
         'lunes': lunes,
         'dias': dias,
-        'veterinarios': veterinarios_de_especialidad(especialidad),
+        'veterinarios': list(veterinarios.values()),
         'veterinario': veterinario,
         'semana_anterior': (
             anterior.isoformat() if anterior >= lunes_actual else None
@@ -444,7 +450,7 @@ def horario_para_consulta(especialidad, veterinario_id, fecha_hora):
         'especialidad': datos_especialidad,
         'veterinario': veterinario,
         'fecha_hora': fecha_hora,
-        'precio': precio_de_turno(veterinario),
+        'precio': precio_de_turno(veterinario, fecha_hora),
     }
 
 

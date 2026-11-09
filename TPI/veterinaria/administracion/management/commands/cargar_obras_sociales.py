@@ -9,7 +9,8 @@ from administracion.services.obras_sociales import (
 class Command(BaseCommand):
     help = (
         'Carga las obras sociales iniciales (ficticias). Se puede correr '
-        'varias veces: no duplica.'
+        'varias veces: no duplica y actualiza los datos de las que ya '
+        'existen.'
     )
 
     def add_arguments(self, parser):
@@ -26,7 +27,7 @@ class Command(BaseCommand):
         resumen = cargar_obras_sociales_iniciales()
         self.stdout.write(self.style.SUCCESS(
             f"Obras sociales: {resumen['creadas']} creadas, "
-            f"{resumen['existentes']} ya existían."
+            f"{resumen['existentes']} ya existían (datos actualizados)."
         ))
         if options['asignar_veterinarios']:
             cambiados = asignar_obras_sociales_de_prueba()

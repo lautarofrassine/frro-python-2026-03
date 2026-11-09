@@ -17,7 +17,7 @@ from administracion.services.obras_sociales import (
     listar_obras_sociales_activas,
     obras_sociales_de_veterinario,
 )
-from atencion.forms import EntradaHistoriaForm, TriageForm
+from atencion.forms import EntradaHistoriaForm, PrecioForm, TriageForm
 from atencion.permisos import (
     rechazar_veterinarios,
     solo_duenos,
@@ -42,6 +42,14 @@ from atencion.services.turnos import (
     puede_cancelarse,
     reservar_turno_de_consulta,
     semana_de_turnos,
+)
+from atencion.services.precios import (
+    PrecioError,
+    eliminar_cambio_de_precio,
+    fecha_minima_de_cambio,
+    historial_de_precios,
+    precio_vigente,
+    programar_cambio_de_precio,
 )
 from atencion.services.urgencias import (
     atender_urgencia,
@@ -320,6 +328,7 @@ def agenda_view(request, veterinario):
         'agenda': agenda_semanal(veterinario, request.GET.get('semana')),
         'turnos_hoy': turnos_de_hoy(veterinario),
         'obras_sociales': obras_sociales_de_veterinario(veterinario),
+        'precio_vigente': precio_vigente(veterinario),
     })
 
 
@@ -452,3 +461,47 @@ def vet_obras_sociales_view(request, veterinario):
             obra.pk for obra in obras_sociales_de_veterinario(veterinario)
         },
     })
+
+
+@veterinario_requerido
+def vet_precios_view(request, veterinario):
+    """Precio vigente, cambios programados, historial y el formulario
+    para programar un nuevo precio."""
+    minima = fecha_minima_de_cambio()
+    if request.method == 'POST':
+        form = PrecioForm(request.POST, fecha_minima=minima)
+        if form.is_valid():
+            try:
+                precio = programar_cambio_de_precio(
+                    veterinario,
+                    form.cleaned_data['monto'],
+                    form.cleaned_data['vigente_desde'],
+                )
+            except PrecioError as error:
+                form.add_error(error.campo, str(error))
+            else:
+                messages.success(
+                    request,
+                    f'Programaste el nuevo precio desde el '
+                    f'{precio.vigente_desde:%d/%m/%Y}.',
+                )
+                return redirect('veterinario:precios')
+    else:
+        form = PrecioForm(fecha_minima=minima)
+    return render(request, 'atencion/vet_precios.html', {
+        'form': form,
+        'historial': historial_de_precios(veterinario),
+        'veterinario': veterinario,
+    })
+
+
+@require_POST
+@veterinario_requerido
+def vet_precio_eliminar_view(request, veterinario, precio_id):
+    try:
+        eliminar_cambio_de_precio(veterinario, precio_id)
+    except PrecioError as error:
+        messages.error(request, str(error))
+    else:
+        messages.success(request, 'Se eliminó el cambio de precio.')
+    return redirect('veterinario:precios')

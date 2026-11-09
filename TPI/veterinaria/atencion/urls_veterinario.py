@@ -9,6 +9,12 @@ urlpatterns = [
     path('agenda/', views.agenda_view, name='agenda'),
     path('turnos/<int:turno_id>/', views.vet_turno_view, name='turno'),
     path('historias/', views.historias_view, name='historias'),
+    path('precios/', views.vet_precios_view, name='precios'),
+    path(
+        'precios/<int:precio_id>/eliminar/',
+        views.vet_precio_eliminar_view,
+        name='precio_eliminar',
+    ),
     path(
         'obras-sociales/',
         views.vet_obras_sociales_view,

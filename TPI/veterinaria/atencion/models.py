@@ -53,6 +53,33 @@ class Veterinario(models.Model):
         return f'{self.nombre} (mat. {self.matricula})'
 
 
+class PrecioVeterinario(models.Model):
+    """Precio por atencion de un veterinario desde una fecha. No se
+    sobrescriben: cada cambio es una fila nueva y queda el historial
+    (las reglas estan en atencion.services.precios)."""
+    veterinario = models.ForeignKey(
+        Veterinario, on_delete=models.CASCADE, related_name='precios',
+    )
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    vigente_desde = models.DateField()
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Precio de veterinario'
+        verbose_name_plural = 'Precios de veterinarios'
+        ordering = ['veterinario', '-vigente_desde']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['veterinario', 'vigente_desde'],
+                name='precio_unico_por_veterinario_y_fecha',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.veterinario.nombre}: ${self.monto} desde ' \
+               f'{self.vigente_desde:%d/%m/%Y}'
+
+
 class HorarioAtencion(models.Model):
     class DiaSemana(models.IntegerChoices):
         LUNES = 0, 'Lunes'

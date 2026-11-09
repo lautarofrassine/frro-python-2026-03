@@ -163,3 +163,36 @@ class TriageForm(forms.Form):
             else TEMPERATURA_POR_DEFECTO
         )
         return datos
+
+
+class PrecioForm(forms.Form):
+    """Programar un nuevo precio. Solo valida formato; las reglas (monto
+    mayor a cero, 14 dias de anticipacion, fecha repetida) las valida
+    atencion.services.precios."""
+
+    monto = forms.DecimalField(
+        label='Nuevo precio ($)',
+        max_digits=10,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control', 'step': '0.01', 'min': '0.01',
+            'inputmode': 'decimal',
+        }),
+    )
+    vigente_desde = forms.DateField(
+        label='Rige desde',
+        widget=forms.DateInput(
+            attrs={'type': 'date', 'class': 'form-control'},
+            format='%Y-%m-%d',
+        ),
+    )
+
+    def __init__(self, *args, fecha_minima=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if fecha_minima:
+            self.fields['vigente_desde'].widget.attrs['min'] = (
+                fecha_minima.isoformat()
+            )
+            self.fields['vigente_desde'].help_text = (
+                f'Desde el {fecha_minima:%d/%m/%Y} en adelante.'
+            )

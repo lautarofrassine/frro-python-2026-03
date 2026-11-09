@@ -41,7 +41,7 @@ class CargarObrasSocialesTests(TestCase):
         self.assertEqual(ObraSocial.objects.count(), 4)
         self.assertIn('4 creadas', salida)
         huellitas = ObraSocial.objects.get(nombre='Huellitas Total')
-        self.assertEqual(huellitas.porcentaje_cobertura, 80)
+        self.assertEqual(huellitas.porcentaje_cobertura, 100)
         self.assertEqual(huellitas.tope_mensual, 80000)
         self.assertTrue(huellitas.activa)
         petcare = ObraSocial.objects.get(nombre='PetCare Básico')
@@ -53,6 +53,23 @@ class CargarObrasSocialesTests(TestCase):
 
         self.assertEqual(ObraSocial.objects.count(), 4)
         self.assertIn('0 creadas, 4 ya existían', salida)
+
+    def test_actualiza_las_que_ya_existen_sin_duplicar(self):
+        ObraSocial.objects.create(
+            nombre='Huellitas Total', porcentaje_cobertura=80,
+            tope_mensual=80000, cubre_consultas=True, activa=False,
+        )
+
+        salida = self._cargar()
+        self._cargar()
+
+        self.assertIn('3 creadas, 1 ya existían', salida)
+        self.assertEqual(ObraSocial.objects.count(), 4)
+        huellitas = ObraSocial.objects.get(nombre='Huellitas Total')
+        self.assertEqual(huellitas.porcentaje_cobertura, 100)
+        self.assertTrue(huellitas.cubre_guardia)
+        # No reactiva una obra social dada de baja.
+        self.assertFalse(huellitas.activa)
 
     def test_los_datos_coinciden_con_la_lista_inicial(self):
         self._cargar()

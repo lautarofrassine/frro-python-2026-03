@@ -109,7 +109,6 @@
                 <a href="{{ url_base }}" class="small ms-1">Cambiar</a>
                 <span class="mx-2 text-secondary">·</span>
                 Especialidad: <strong>{{ especialidad.nombre }}</strong>
-                (${{ especialidad.precio|floatformat:"0g" }})
                 <a href="{{ url_base }}?mascota={{ mascota.pk }}"
                    class="small ms-1">Cambiar</a>
             </p>
@@ -189,6 +188,9 @@
                                                         {{ horario.veterinario_apellido }}
                                                     </span>
                                                 {% endif %}
+                                                <span class="d-block small fw-normal">
+                                                    ${{ horario.precio|floatformat:"0g" }}
+                                                </span>
                                             </a>
                                         {% empty %}
                                             <span class="text-secondary small text-center py-2">
