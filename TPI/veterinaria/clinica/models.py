@@ -21,6 +21,8 @@ class Dueno(models.Model):
         blank=True,
         related_name='duenos',
     )
+    # Obligatorio si tiene obra social (lo valida el service).
+    numero_afiliado = models.CharField(max_length=30, blank=True, default='')
 
     class Meta:
         verbose_name = 'Dueño'

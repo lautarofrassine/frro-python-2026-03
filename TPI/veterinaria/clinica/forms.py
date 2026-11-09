@@ -212,3 +212,64 @@ class MascotaForm(forms.Form):
         return {campo: self.cleaned_data[campo] for campo in (
             'nombre', 'especie', 'raza', 'fecha_nacimiento', 'peso_kg',
         )}
+
+
+class PerfilForm(forms.Form):
+    """Datos editables del dueño (el email y el DNI son solo lectura) y
+    su obra social. Solo valida formato; las reglas las validan los
+    services."""
+
+    nombre = forms.CharField(label='Nombre', max_length=100)
+    apellido = forms.CharField(label='Apellido', max_length=100)
+    telefono = forms.CharField(
+        label='Teléfono',
+        max_length=20,
+        validators=[
+            RegexValidator(
+                r'^[\d\s()+-]{6,20}$',
+                'Ingresá un teléfono válido (números, espacios, +, - o '
+                'paréntesis).',
+            ),
+        ],
+    )
+    # Las opciones se cargan en __init__ con las obras sociales activas
+    # que la vista obtiene del service.
+    obra_social = forms.ChoiceField(
+        label='Obra social', required=False, choices=[],
+    )
+    numero_afiliado = forms.CharField(
+        label='Número de afiliado', max_length=30, required=False,
+    )
+
+    def __init__(self, *args, **kwargs):
+        obras_sociales = kwargs.pop('obras_sociales', ())
+        super().__init__(*args, **kwargs)
+        self.fields['obra_social'].choices = (
+            [('', 'Sin obra social')]
+            + [(str(obra.pk), obra.nombre) for obra in obras_sociales]
+        )
+        for campo in self.fields.values():
+            campo.widget.attrs.setdefault('class', 'form-control')
+        self.fields['obra_social'].widget.attrs['class'] = 'form-select'
+
+    @classmethod
+    def desde_dueno(cls, dueno, obras_sociales):
+        return cls(obras_sociales=obras_sociales, initial={
+            'nombre': dueno.nombre,
+            'apellido': dueno.apellido,
+            'telefono': dueno.telefono,
+            'obra_social': (
+                str(dueno.obra_social_id) if dueno.obra_social_id else ''
+            ),
+            'numero_afiliado': dueno.numero_afiliado,
+        })
+
+    def datos_perfil(self):
+        """Argumentos para clinica.services.usuarios
+        .actualizar_perfil_de_dueno."""
+        datos = {
+            campo: self.cleaned_data[campo]
+            for campo in ('nombre', 'apellido', 'telefono', 'numero_afiliado')
+        }
+        datos['obra_social_id'] = self.cleaned_data['obra_social'] or None
+        return datos

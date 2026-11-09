@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block titulo %}Mi perfil - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h1 class="h2 mb-4">
+                    <i class="bi bi-person-vcard text-success me-2"></i>Mi perfil
+                </h1>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% for error in form.non_field_errors %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endfor %}
+
+                    <div class="card tarjeta-triage mb-4">
+                        <div class="card-body p-4">
+                            <h2 class="h5 mb-3">Mis datos</h2>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {% include "includes/campo_form.html" with campo=form.nombre %}
+                                </div>
+                                <div class="col-md-6">
+                                    {% include "includes/campo_form.html" with campo=form.apellido %}
+                                </div>
+                                <div class="col-md-6">
+                                    {% include "includes/campo_form.html" with campo=form.telefono %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <span class="form-label fw-semibold d-block">Email</span>
+                                    <input type="text" class="form-control" value="{{ dueno.email }}"
+                                           readonly disabled aria-label="Email">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <span class="form-label fw-semibold d-block">DNI</span>
+                                    <input type="text" class="form-control" value="{{ dueno.dni }}"
+                                           readonly disabled aria-label="DNI">
+                                </div>
+                            </div>
+                            <p class="form-text mb-0">
+                                El email y el DNI no se pueden cambiar.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="card tarjeta-triage mb-4">
+                        <div class="card-body p-4">
+                            <h2 class="h5 mb-3">Obra social</h2>
+                            <div class="row">
+                                <div class="col-md-7 mb-3">
+                                    <label for="{{ form.obra_social.id_for_label }}"
+                                           class="form-label fw-semibold">
+                                        {{ form.obra_social.label }}
+                                    </label>
+                                    {# Las opciones llevan sus datos para mostrar la cobertura. #}
+                                    <select name="{{ form.obra_social.html_name }}"
+                                            id="{{ form.obra_social.id_for_label }}"
+                                            class="form-select">
+                                        <option value="">Sin obra social</option>
+                                        {% for obra in obras_sociales %}
+                                            <option value="{{ obra.pk }}"
+                                                    data-porcentaje="{{ obra.porcentaje_cobertura|floatformat:'0' }}"
+                                                    data-tope="{{ obra.tope_mensual|floatformat:'0g' }}"
+                                                    data-servicios="{{ obra.servicios_cubiertos|join:', '|default:'Ninguno' }}"
+                                                    {% if form.obra_social.value|stringformat:'s' == obra.pk|stringformat:'s' %}selected{% endif %}>
+                                                {{ obra.nombre }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    {% for error in form.obra_social.errors %}
+                                        <div class="text-danger small mt-1">
+                                            <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-5" id="bloque-afiliado">
+                                    {% include "includes/campo_form.html" with campo=form.numero_afiliado %}
+                                </div>
+                            </div>
+
+                            <div id="cobertura" class="alert alert-success mb-0" hidden>
+                                <div><strong>Cobertura:</strong> <span id="cobertura-porcentaje"></span>%</div>
+                                <div><strong>Tope mensual:</strong> $<span id="cobertura-tope"></span></div>
+                                <div><strong>Cubre:</strong> <span id="cobertura-servicios"></span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column flex-sm-row gap-2">
+                        <button type="submit" class="btn btn-brand btn-lg flex-fill">
+                            Guardar cambios
+                        </button>
+                        <a href="{% url 'clinica:panel' %}"
+                           class="btn btn-outline-secondary btn-lg">
+                            Volver a mi panel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    // Muestra la cobertura de la obra social elegida y oculta el numero
+    // de afiliado si se elige "Sin obra social".
+    (function () {
+        var select = document.getElementById('{{ form.obra_social.id_for_label }}');
+        var cobertura = document.getElementById('cobertura');
+        var afiliado = document.getElementById('bloque-afiliado');
+        function actualizar() {
+            var opcion = select.options[select.selectedIndex];
+            var elegida = opcion.value !== '';
+            cobertura.hidden = !elegida;
+            afiliado.hidden = !elegida;
+            if (elegida) {
+                document.getElementById('cobertura-porcentaje').textContent = opcion.dataset.porcentaje;
+                document.getElementById('cobertura-tope').textContent = opcion.dataset.tope;
+                document.getElementById('cobertura-servicios').textContent = opcion.dataset.servicios;
+            }
+        }
+        select.addEventListener('change', actualizar);
+        actualizar();
+    })();
+</script>
+{% endblock %}

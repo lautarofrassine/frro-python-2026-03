@@ -11,6 +11,12 @@ from django.utils.formats import date_format
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.views.decorators.http import require_POST
 
+from administracion.services.obras_sociales import (
+    ObraSocialError,
+    actualizar_obras_sociales_de_veterinario,
+    listar_obras_sociales_activas,
+    obras_sociales_de_veterinario,
+)
 from atencion.forms import EntradaHistoriaForm, TriageForm
 from atencion.permisos import (
     rechazar_veterinarios,
@@ -313,6 +319,7 @@ def agenda_view(request, veterinario):
         'veterinario': veterinario,
         'agenda': agenda_semanal(veterinario, request.GET.get('semana')),
         'turnos_hoy': turnos_de_hoy(veterinario),
+        'obras_sociales': obras_sociales_de_veterinario(veterinario),
     })
 
 
@@ -421,4 +428,27 @@ def entrada_editar_view(request, veterinario, entrada_id):
         'mascota': entrada.mascota,
         'turno': entrada.turno,
         'entrada': entrada,
+    })
+
+
+@veterinario_requerido
+def vet_obras_sociales_view(request, veterinario):
+    """El veterinario marca las obras sociales activas que atiende."""
+    if request.method == 'POST':
+        try:
+            actualizar_obras_sociales_de_veterinario(
+                veterinario, request.POST.getlist('obras_sociales'),
+            )
+        except ObraSocialError as error:
+            messages.error(request, str(error))
+        else:
+            messages.success(
+                request, 'Se guardaron las obras sociales que atendés.',
+            )
+        return redirect('veterinario:obras_sociales')
+    return render(request, 'atencion/vet_obras_sociales.html', {
+        'obras_sociales': listar_obras_sociales_activas(),
+        'atendidas': {
+            obra.pk for obra in obras_sociales_de_veterinario(veterinario)
+        },
     })

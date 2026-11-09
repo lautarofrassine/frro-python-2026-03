@@ -38,6 +38,12 @@ class Veterinario(models.Model):
         choices=Estado.choices,
         default=Estado.ACTIVO,
     )
+    # Las elige el propio veterinario entre las activas.
+    obras_sociales = models.ManyToManyField(
+        'administracion.ObraSocial',
+        blank=True,
+        related_name='veterinarios',
+    )
 
     class Meta:
         verbose_name = 'Veterinario'

@@ -20,6 +20,7 @@ class VeterinarioAdmin(admin.ModelAdmin):
         'nombre', 'matricula', 'especialidad', 'estado', 'usuario',
     )
     raw_id_fields = ('usuario',)
+    filter_horizontal = ('obras_sociales',)
     search_fields = ('nombre', 'matricula', 'especialidad')
     list_filter = ('estado', 'especialidad')
     inlines = [HorarioAtencionInline]

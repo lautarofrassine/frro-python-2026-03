@@ -561,14 +561,15 @@ class NavegacionVeterinarioTests(VeterinarioBase):
             )
         ]
 
-    def test_la_navbar_del_veterinario_tiene_solo_agenda_e_historias(self):
+    def test_la_navbar_del_veterinario_tiene_solo_sus_secciones(self):
         self.como_veterinario()
 
         contenido = self.client.get(URL_AGENDA).content.decode()
 
         self.assertEqual(
             [href for href, _ in self._links_del_menu(contenido)],
-            [URL_AGENDA, reverse('veterinario:historias')],
+            [URL_AGENDA, reverse('veterinario:historias'),
+             reverse('veterinario:obras_sociales')],
         )
         for ancla in self.LINKS_LANDING:
             with self.subTest(ancla=ancla):
@@ -587,6 +588,8 @@ class NavegacionVeterinarioTests(VeterinarioBase):
              historias),
             (reverse('veterinario:entrada_nueva', args=[self.firulais.pk]),
              historias),
+            (reverse('veterinario:obras_sociales'),
+             reverse('veterinario:obras_sociales')),
         )
         for url, activo in casos:
             with self.subTest(url=url):

@@ -6,9 +6,15 @@ from .models import Medicamento, ObraSocial, Pago
 @admin.register(ObraSocial)
 class ObraSocialAdmin(admin.ModelAdmin):
     list_display = (
-        'nombre', 'porcentaje_cobertura', 'tope_mensual', 'servicio_cubierto',
+        'nombre', 'porcentaje_cobertura', 'tope_mensual', 'servicios',
+        'activa',
     )
+    list_filter = ('activa',)
     search_fields = ('nombre',)
+
+    @admin.display(description='Servicios que cubre')
+    def servicios(self, obra_social):
+        return ', '.join(obra_social.servicios_cubiertos()) or '—'
 
 
 @admin.register(Medicamento)

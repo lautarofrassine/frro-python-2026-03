@@ -16,6 +16,15 @@
                     {{ veterinario.nombre }} ·
                     {{ veterinario.get_especialidad_display }}
                 </div>
+                <div class="small text-secondary">
+                    <i class="bi bi-shield-check me-1"></i>
+                    {% if obras_sociales %}
+                        Atendés: {{ obras_sociales|join:", " }}
+                    {% else %}
+                        No atendés obras sociales.
+                    {% endif %}
+                    <a href="{% url 'veterinario:obras_sociales' %}" class="ms-1">Cambiar</a>
+                </div>
             </div>
             <div class="d-flex align-items-center gap-2">
                 <a href="?semana={{ agenda.semana_anterior }}"

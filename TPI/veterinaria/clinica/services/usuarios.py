@@ -5,6 +5,9 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 
+from administracion.services.obras_sociales import (
+    asignar_obra_social_a_dueno,
+)
 from clinica.models import Dueno
 
 MENSAJE_EMAIL_EN_USO = 'Este email ya está en uso.'
@@ -119,3 +122,28 @@ def obtener_dueno_de_usuario(user):
         .filter(usuario=user)
         .first()
     )
+
+
+@transaction.atomic
+def actualizar_perfil_de_dueno(dueno, nombre, apellido, telefono,
+                               obra_social_id, numero_afiliado=''):
+    """Guarda los datos editables del dueño (el email y el DNI no se
+    cambian) y su obra social, todo junto o nada. Lanza RegistroError
+    si falta un dato y ObraSocialError si la obra social no vale."""
+    datos = {
+        'nombre': (nombre or '').strip(),
+        'apellido': (apellido or '').strip(),
+        'telefono': (telefono or '').strip(),
+    }
+    for campo, valor in datos.items():
+        if not valor:
+            raise RegistroError('Este dato es obligatorio.', campo=campo)
+    for campo, valor in datos.items():
+        setattr(dueno, campo, valor)
+    dueno.save(update_fields=list(datos))
+    # El User tambien tiene el nombre (se usa en el menu).
+    usuario = dueno.usuario
+    usuario.first_name = datos['nombre']
+    usuario.last_name = datos['apellido']
+    usuario.save(update_fields=['first_name', 'last_name'])
+    return asignar_obra_social_a_dueno(dueno, obra_social_id, numero_afiliado)

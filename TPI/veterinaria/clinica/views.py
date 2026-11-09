@@ -11,9 +11,13 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 
+from administracion.services.obras_sociales import (
+    ObraSocialError,
+    listar_obras_sociales_activas,
+)
 from atencion.permisos import rechazar_veterinarios
 from atencion.services.veterinarios import obtener_veterinario_de_usuario
-from clinica.forms import LoginForm, MascotaForm, RegistroForm
+from clinica.forms import LoginForm, MascotaForm, PerfilForm, RegistroForm
 from clinica.services.mascotas import (
     MascotaError,
     MascotaNoEncontrada,
@@ -25,6 +29,7 @@ from clinica.services.mascotas import (
 )
 from clinica.services.usuarios import (
     RegistroError,
+    actualizar_perfil_de_dueno,
     obtener_dueno_de_usuario,
     registrar_dueno,
 )
@@ -307,4 +312,28 @@ def vacuna_reservar_view(request, dueno):
         'mascota': mascota,
         'vacuna': vacuna,
         'horario': horario,
+    })
+
+
+@dueno_requerido
+def perfil_view(request, dueno):
+    obras_sociales = listar_obras_sociales_activas()
+    if request.method == 'POST':
+        form = PerfilForm(request.POST, obras_sociales=obras_sociales)
+        if form.is_valid():
+            try:
+                actualizar_perfil_de_dueno(dueno, **form.datos_perfil())
+            except (RegistroError, ObraSocialError) as error:
+                form.add_error(error.campo, str(error))
+            else:
+                messages.success(
+                    request, 'Se guardaron los cambios de tu perfil.',
+                )
+                return redirect('clinica:perfil')
+    else:
+        form = PerfilForm.desde_dueno(dueno, obras_sociales)
+    return render(request, 'clinica/perfil.html', {
+        'form': form,
+        'dueno': dueno,
+        'obras_sociales': obras_sociales,
     })

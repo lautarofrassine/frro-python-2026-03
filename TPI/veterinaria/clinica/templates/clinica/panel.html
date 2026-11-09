@@ -38,7 +38,17 @@
                                 <dd class="col-7">{{ dueno.telefono }}</dd>
                                 <dt class="col-5 text-secondary">Obra social</dt>
                                 <dd class="col-7">
-                                    {{ dueno.obra_social|default:"Sin obra social" }}
+                                    {% if dueno.obra_social %}
+                                        {{ dueno.obra_social.nombre }}
+                                        <span class="d-block dato-mascota">
+                                            Afiliado N.º {{ dueno.numero_afiliado }}
+                                        </span>
+                                    {% else %}
+                                        Sin obra social
+                                        <a href="{% url 'clinica:perfil' %}" class="d-block small">
+                                            Elegila en Mi perfil
+                                        </a>
+                                    {% endif %}
                                 </dd>
                                 <dt class="col-5 text-secondary">Cliente desde</dt>
                                 <dd class="col-7 mb-0">

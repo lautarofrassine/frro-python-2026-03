@@ -2,10 +2,16 @@ from django.db import models
 
 
 class ObraSocial(models.Model):
+    """Las obras sociales vienen precargadas (cargar_obras_sociales):
+    dueños y veterinarios solo eligen entre las activas."""
+
     nombre = models.CharField(max_length=100)
     porcentaje_cobertura = models.DecimalField(max_digits=5, decimal_places=2)
-    servicio_cubierto = models.CharField(max_length=200)
     tope_mensual = models.DecimalField(max_digits=10, decimal_places=2)
+    cubre_consultas = models.BooleanField(default=False)
+    cubre_vacunacion = models.BooleanField(default=False)
+    cubre_guardia = models.BooleanField(default=False)
+    activa = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = 'Obra social'
@@ -13,6 +19,15 @@ class ObraSocial(models.Model):
 
     def __str__(self):
         return self.nombre
+
+    def servicios_cubiertos(self):
+        """['Consultas', 'Vacunación', 'Guardia'], segun lo que cubra."""
+        servicios = (
+            (self.cubre_consultas, 'Consultas'),
+            (self.cubre_vacunacion, 'Vacunación'),
+            (self.cubre_guardia, 'Guardia'),
+        )
+        return [nombre for cubre, nombre in servicios if cubre]
 
 
 class Medicamento(models.Model):
