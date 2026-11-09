@@ -1,7 +1,7 @@
 Clínica Veterinaria Automatizada
 
-
 ## Descripción del proyecto
+
 El sistema de Clínica Veterinaria Automatizada es una aplicación de gestión integral para clínicas veterinarias que automatiza el proceso de atención al paciente de principio a fin. El sistema permite que el dueño de una mascota registre los síntomas de su animal, reciba una clasificación automática del nivel de urgencia y obtenga un turno asignado sin intervención manual. Durante la consulta, el veterinario registra el diagnóstico, prescribe medicamentos y programa el seguimiento. El sistema además gestiona el stock de medicamentos, el calendario de vacunación y los pagos con cobertura de obra social.
 Objetivo principal: reducir la carga administrativa de la clínica y garantizar una atención ordenada, trazable y disponible las 24 horas.
 
@@ -19,25 +19,24 @@ Definir los requerimientos del sistema.
 
 ### Funcionales
 
-| ID | Descripción |
-|---|---|
-| RF01 | El sistema debe permitir registrar dueños y mascotas con sus datos básicos. |
+| ID   | Descripción                                                                                                                                            |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| RF01 | El sistema debe permitir registrar dueños y mascotas con sus datos básicos.                                                                            |
 | RF02 | El sistema debe permitir ingresar los síntomas de una mascota y determinar automáticamente su nivel de urgencia: emergencia, prioritario o programado. |
-| RF03 | El sistema debe asignar un turno automáticamente según el nivel de urgencia y la disponibilidad del veterinario. |
-| RF04 | El sistema debe permitir registrar el historial clínico de cada mascota por cada consulta (diagnóstico, tratamiento y observaciones). |
-| RF05 | El sistema debe permitir prescribir medicamentos y descontar la cantidad del stock disponible. |
-| RF06 | El sistema debe registrar las vacunas aplicadas a cada mascota y calcular la fecha de la próxima dosis. |
-| RF07 | El sistema debe gestionar el pago de cada turno, calculando el monto final según la cobertura de obra social del dueño. |
-| RF08 | El sistema debe alertar cuando el stock de un medicamento caiga por debajo del mínimo configurado. |
+| RF03 | El sistema debe asignar un turno automáticamente según el nivel de urgencia y la disponibilidad del veterinario.                                       |
+| RF04 | El sistema debe permitir registrar el historial clínico de cada mascota por cada consulta (diagnóstico, tratamiento y observaciones).                  |
+| RF05 | El sistema debe permitir gestionar obra social del dueño.                                                                                              |
+| RF06 | El sistema debe registrar las vacunas aplicadas a cada mascota y calcular la fecha de la próxima dosis.                                                |
+| RF07 | El sistema debe gestionar el pago de cada turno, calculando el monto final según la cobertura de obra social del dueño.                                |
 
 ### No Funcionales
 
-| ID | Descripción |
-|---|---|
-| RNF01 | El sistema debe funcionar en PCs con Windows 10 o superior como sistema operativo. |
-| RNF02 | El sistema debe estar desarrollado utilizando Python 3.8 o superior. |
+| ID    | Descripción                                                                              |
+| ----- | ---------------------------------------------------------------------------------------- |
+| RNF01 | El sistema debe funcionar en PCs con Windows 10 o superior como sistema operativo.       |
+| RNF02 | El sistema debe estar desarrollado utilizando Python 3.8 o superior.                     |
 | RNF03 | El sistema debe utilizar una base de datos SQL para el almacenamiento de la información. |
-| RNF04 | El sistema debe diseñarse con una arquitectura en 3 capas. |
+| RNF04 | El sistema debe diseñarse con una arquitectura en 3 capas.                               |
 
 ### Portability
 
