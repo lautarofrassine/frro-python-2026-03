@@ -138,6 +138,24 @@ def _fin_de_franja(dia, horario):
     return datetime.combine(dia, horario.hora_fin)
 
 
+def horarios_del_dia(veterinario, dia):
+    """Comienzos de los turnos de 30 minutos del veterinario en ese dia
+    segun su HorarioAtencion, sin mirar si estan ocupados ni si ya
+    pasaron (para cargar datos historicos con las mismas reglas)."""
+    comienzos = []
+    for horario in veterinario.horarios_atencion.filter(
+        dia_semana=dia.weekday(),
+    ):
+        inicio = timezone.make_aware(
+            datetime.combine(dia, horario.hora_inicio),
+        )
+        fin = timezone.make_aware(_fin_de_franja(dia, horario))
+        while inicio + DURACION_TURNO <= fin:
+            comienzos.append(inicio)
+            inicio += DURACION_TURNO
+    return sorted(comienzos)
+
+
 def _dentro_del_horario_de_atencion(veterinario, fecha_hora):
     """True si fecha_hora es el comienzo de un turno de 30 minutos
     dentro de un HorarioAtencion del veterinario."""
