@@ -3,11 +3,13 @@ por administracion.services.pagos y mercadopago_service."""
 from django.contrib import messages
 from django.http import Http404
 from django.shortcuts import redirect, render
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST 
+
 
 from administracion.services.mercadopago_service import (
     MercadoPagoError,
     crear_preferencia,
+    sincronizar_pago,
     esta_configurado,
     verificar_y_registrar_pago,
 )
@@ -35,6 +37,9 @@ def _pago_o_404(dueno, pago_id):
 
 @dueno_requerido
 def mis_pagos_view(request, dueno):
+    if esta_configurado():
+        for pago in pagos_del_dueno(dueno)['pendientes']:
+            sincronizar_pago(pago)
     return render(request, 'administracion/mis_pagos.html', {
         **pagos_del_dueno(dueno),
         'pago_online_disponible': esta_configurado(),
@@ -43,16 +48,16 @@ def mis_pagos_view(request, dueno):
 
 @dueno_requerido
 def confirmacion_view(request, dueno, pago_id):
-    """Resumen despues de reservar: precio, cobertura y monto a pagar,
-    con las opciones de pagar online o en la clinica."""
     pago = _pago_o_404(dueno, pago_id)
+    if esta_configurado():
+        sincronizar_pago(pago)
+        pago = _pago_o_404(dueno, pago_id)  # recarga con el estado actualizado
     return render(request, 'administracion/confirmacion.html', {
         'pago': pago,
         'turno': pago.turno,
         'motivo_no_pagar': motivo_para_no_pagar_online(pago),
         'pago_online_disponible': esta_configurado(),
     })
-
 
 @dueno_requerido
 def en_clinica_view(request, dueno, pago_id):
@@ -82,6 +87,7 @@ def pagar_view(request, dueno, pago_id):
 def retorno_view(request, dueno):
     """Mercado Pago devuelve al dueño aca. El resultado sale de consultar
     la API, no de los parametros de la URL."""
+    print('RETORNO GET:', dict(request.GET))
     payment_id = (
         request.GET.get('payment_id') or request.GET.get('collection_id')
     )

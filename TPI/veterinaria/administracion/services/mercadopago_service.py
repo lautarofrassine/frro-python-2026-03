@@ -104,6 +104,26 @@ def _admite_auto_return(url):
     partes = urlsplit(url)
     return partes.scheme == 'https' and partes.hostname not in HOSTS_LOCALES
 
+def sincronizar_pago(pago):
+    """Busca en Mercado Pago pagos aprobados con external_reference = id
+    del Pago y, si hay uno, lo registra. Silencioso si falla."""
+    try:
+        sdk = _sdk()
+        status, datos = _llamar(
+            sdk.payment().search,
+            {'external_reference': str(pago.pk)},
+        )
+        if status != 200:
+            return
+        for p in datos.get('results', []):
+            if p.get('status') == 'approved':
+                verificar_y_registrar_pago(
+                    str(p['id']), pago.turno.mascota.dueno,
+                )
+                return
+    except (MercadoPagoError, PagoError):
+        return
+
 
 def _llamar(funcion, *args):
     """Llama al SDK; cualquier falla de red o del SDK es MercadoPagoError."""
