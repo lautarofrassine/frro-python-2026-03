@@ -3,11 +3,13 @@ import re
 from datetime import date, datetime, time, timedelta
 from io import StringIO
 from unittest.mock import patch
+from urllib.parse import unquote
 from zoneinfo import ZoneInfo
 
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from atencion.models import HorarioAtencion, NivelUrgencia, Turno, Veterinario
 from clinica.models import Vacuna
@@ -472,22 +474,125 @@ class VacunasViewsTests(VacunasBase):
         )
         self.assertContains(response, 'es solo para perros')
 
-    def test_paso_2_muestra_los_proximos_horarios_libres(self):
-        response = self.client.get(
-            reverse('clinica:vacuna_reservar'),
-            {'mascota': self.luna.pk, 'vacuna': self.triple_felina.pk},
+    def _paso_2(self, **parametros):
+        datos = {'mascota': self.luna.pk, 'vacuna': self.triple_felina.pk}
+        datos.update(parametros)
+        return self.client.get(reverse('clinica:vacuna_reservar'), datos)
+
+    def _dia_paso_2(self, response, fecha):
+        return next(
+            dia
+            for semana in response.context['calendario']['semanas']
+            for dia in semana if dia['fecha'] == fecha
         )
 
-        self.assertEqual(len(response.context['horarios']), 10)
-        self.assertContains(response, '13:00 hs')
+    def test_paso_2_muestra_el_calendario_de_lunes_a_domingo(self):
+        response = self._paso_2()
+
+        calendario = response.context['calendario']
+        self.assertEqual(calendario['primer_dia'], date(2026, 10, 1))
+        semanas = calendario['semanas']
+        self.assertTrue(all(len(semana) == 7 for semana in semanas))
+        self.assertEqual(semanas[0][0]['fecha'].weekday(), 0)  # lunes
+        self.assertEqual(semanas[0][6]['fecha'].weekday(), 6)  # domingo
+        self.assertContains(response, 'Octubre 2026')
+        self.assertContains(response, 'class="calendario-dias"')
+        # Sin mes anterior (ya paso) ni siguiente (no se puede reservar).
+        self.assertIsNone(calendario['mes_anterior'])
+        self.assertNotContains(response, 'aria-label="Mes anterior"')
+
+    def test_solo_los_dias_con_horarios_de_vacunacion_estan_disponibles(self):
+        # Un clinico que atiende los domingos no habilita el domingo.
+        domingo_clinico = Veterinario.objects.create(
+            nombre='Dr. Domingo', matricula='MP-7000',
+            especialidad='CLINICA_GENERAL',
+        )
+        HorarioAtencion.objects.create(
+            veterinario=domingo_clinico, dia_semana=6,
+            hora_inicio=time(8, 0), hora_fin=time(19, 0),
+        )
+        # El jueves 15 la vacunadora tiene todo ocupado.
+        hora = datetime(2026, 10, 15, 13, 0, tzinfo=ZONA)
+        while hora.hour < 19:
+            self.crear_turno(self.firulais, hora, vacuna=self.sextuple)
+            hora += timedelta(minutes=30)
+
+        response = self._paso_2()
+
+        semanas = response.context['calendario']['semanas']
+        disponibles = {
+            dia['fecha'] for semana in semanas
+            for dia in semana if dia['disponible']
+        }
+        # Del miercoles 14 al miercoles 28 (14 dias), sin domingos ni el 15.
+        esperados = {
+            date(2026, 10, d) for d in range(14, 29)
+            if date(2026, 10, d).weekday() != 6 and d != 15
+        }
+        self.assertEqual(disponibles, esperados)
+        contenido = response.content.decode()
+        for fecha in (date(2026, 10, 13), date(2026, 10, 15),
+                      date(2026, 10, 18), date(2026, 10, 29)):
+            with self.subTest(fecha=fecha):
+                self.assertRegex(
+                    contenido,
+                    r'class="calendario-dia deshabilitado[^"]*"\s+'
+                    rf'data-dia="{fecha.isoformat()}"',
+                )
+        self.assertRegex(
+            contenido,
+            r'href="[^"]*dia=2026-10-16"\s+class="calendario-dia disponible',
+        )
+
+    def test_al_elegir_un_dia_lista_sus_horarios_con_el_veterinario(self):
+        otra = _veterinario(
+            'Dr. Hugo Ríos', 'MP-5020', 'VACUNACION',
+            time(17, 0), time(19, 0),
+        )
+
+        response = self._paso_2(dia='2026-10-16')
+
+        horarios = response.context['horarios']
+        self.assertEqual(
+            {timezone.localtime(h['fecha_hora']).date() for h in horarios},
+            {date(2026, 10, 16)},
+        )
+        # 13 a 19 de la vacunadora (12) + 17 a 19 del otro (4).
+        self.assertEqual(len(horarios), 16)
+        a_las_17 = [
+            h['veterinario_id'] for h in horarios
+            if timezone.localtime(h['fecha_hora']).hour == 17
+            and timezone.localtime(h['fecha_hora']).minute == 0
+        ]
+        self.assertEqual(sorted(a_las_17), sorted([self.vacunadora.pk,
+                                                   otra.pk]))
+        self.assertContains(response, 'Horarios del viernes 16 de octubre')
         self.assertContains(response, 'Dra. Paula Navarro')
+        self.assertContains(response, 'Dr. Hugo Ríos')
         self.assertNotContains(response, 'Dr. Martín Sosa')
+        self.assertTrue(self._dia_paso_2(response, date(2026, 10, 16))[
+            'disponible'
+        ])
+        self.assertContains(response, 'calendario-dia disponible elegido')
+
+    def test_dia_pasado_o_sin_horarios_no_muestra_opciones(self):
+        for dia in ('2026-10-13', '2026-10-18', '2026-11-30', 'cualquiera'):
+            with self.subTest(dia=dia):
+                response = self._paso_2(dia=dia)
+                self.assertEqual(response.context['horarios'], [])
+                self.assertNotContains(response, 'fecha_hora=')
+
+    def test_meses_pasados_o_lejanos_vuelven_al_permitido(self):
+        for mes in ('2026-09', '2025-01', '2027-03'):
+            with self.subTest(mes=mes):
+                response = self._paso_2(mes=mes)
+                self.assertEqual(
+                    response.context['calendario']['primer_dia'],
+                    date(2026, 10, 1),
+                )
 
     def test_el_link_de_un_horario_lleva_a_la_confirmacion(self):
-        paso_2 = self.client.get(
-            reverse('clinica:vacuna_reservar'),
-            {'mascota': self.luna.pk, 'vacuna': self.triple_felina.pk},
-        )
+        paso_2 = self._paso_2(dia='2026-10-14')
         link = re.search(
             r'href="([^"]*fecha_hora=[^"]*)"', paso_2.content.decode(),
         ).group(1)
@@ -500,6 +605,31 @@ class VacunasViewsTests(VacunasBase):
             response.context['horario']['fecha_hora'], AHORA.replace(hour=13),
         )
         self.assertContains(response, 'Confirmar turno')
+
+    def test_reservar_un_horario_elegido_en_el_calendario(self):
+        paso_2 = self._paso_2(dia='2026-10-27')
+        link = html.unescape(re.search(
+            r'href="([^"]*fecha_hora=[^"]*)"', paso_2.content.decode(),
+        ).group(1))
+        datos = dict(
+            parte.split('=', 1) for parte in link.split('?', 1)[1].split('&')
+        )
+        datos['fecha_hora'] = unquote(datos['fecha_hora'])
+
+        response = self.client.post(
+            reverse('clinica:vacuna_reservar'), datos, follow=True,
+        )
+
+        turno = Turno.objects.get()
+        self.assertEqual(turno.vacuna, self.triple_felina)
+        self.assertEqual(turno.mascota, self.luna)
+        self.assertEqual(
+            turno.fecha_hora, datetime(2026, 10, 27, 13, 0, tzinfo=ZONA),
+        )
+        self.assertRedirects(
+            response,
+            reverse('pagos:confirmacion', args=[turno.pagos.get().pk]),
+        )
 
     def test_reserva_completa_muestra_el_pago_y_queda_en_el_calendario(self):
         horario = horarios_libres_vacunacion()[0]

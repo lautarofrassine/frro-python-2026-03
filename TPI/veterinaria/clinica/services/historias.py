@@ -6,7 +6,11 @@ from django.db.models.functions import Lower
 
 from atencion.models import Turno
 from clinica.models import HistorialClinico, Mascota
-from clinica.services.mascotas import MascotaNoEncontrada
+from clinica.services.mascotas import (
+    MascotaNoEncontrada,
+    listar_mascotas,
+    obtener_mascota_de_dueno,
+)
 
 
 class HistoriaError(Exception):
@@ -67,6 +71,20 @@ def historia_clinica(mascota):
         .select_related('veterinario', 'turno')
         .order_by('-fecha', '-id')
     )
+
+
+def mascotas_para_historia(dueno):
+    """Mascotas activas del dueño, para elegir de cual ver la historia
+    clinica."""
+    return listar_mascotas(dueno)
+
+
+def historia_de_mascota_para_dueno(dueno, mascota_id):
+    """La historia clinica de una mascota del dueño, solo para leer:
+    {'mascota', 'entradas'}, de la entrada mas reciente a la mas vieja.
+    Lanza MascotaNoEncontrada si la mascota no es suya."""
+    mascota = obtener_mascota_de_dueno(dueno, mascota_id)
+    return {'mascota': mascota, 'entradas': historia_clinica(mascota)}
 
 
 def _validar(diagnostico, tratamiento, observaciones):

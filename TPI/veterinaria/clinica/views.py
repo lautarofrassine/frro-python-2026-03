@@ -31,6 +31,10 @@ from clinica.forms import (
     ObraSocialForm,
     RegistroForm,
 )
+from clinica.services.historias import (
+    historia_de_mascota_para_dueno,
+    mascotas_para_historia,
+)
 from clinica.services.mascotas import (
     MascotaError,
     MascotaNoEncontrada,
@@ -55,7 +59,9 @@ from clinica.services.vacunas import (
     VacunaNoEncontrada,
     calendario_vacunacion,
     detalle_turno_vacuna,
-    horarios_libres_vacunacion,
+    calendario_de_horarios_vacunacion,
+    horarios_vacunacion_del_dia,
+    interpretar_dia,
     mes_de_turno,
     obtener_horario_libre,
     obtener_vacuna_para_mascota,
@@ -292,15 +298,21 @@ def vacuna_reservar_view(request, dueno):
         'clinica:vacuna_reservar', mascota=mascota.pk, vacuna=vacuna.pk,
     )
 
-    # Paso 2: elegir el horario.
+    # Paso 2: elegir el dia en el calendario y despues el horario.
     veterinario_id = datos.get('veterinario')
     fecha_hora = datos.get('fecha_hora')
     if not (veterinario_id and fecha_hora):
+        dia = interpretar_dia(request.GET.get('dia'))
+        mes = request.GET.get('mes') or (
+            dia.strftime('%Y-%m') if dia else None
+        )
         return render(request, 'clinica/vacuna_reservar.html', {
             'paso': 2,
             'mascota': mascota,
             'vacuna': vacuna,
-            'horarios': horarios_libres_vacunacion(),
+            'calendario': calendario_de_horarios_vacunacion(mes),
+            'dia': dia,
+            'horarios': horarios_vacunacion_del_dia(dia) if dia else [],
         })
 
     # Paso 3: confirmar. El POST reserva.
@@ -427,4 +439,30 @@ def perfil_view(request, dueno):
         'dueno': dueno,
         'obras_sociales': obras_sociales,
         'tope_restante': tope_restante_del_mes(dueno),
+    })
+
+
+# ---------------------------------------------------------------------
+# Historia clinica (solo lectura para el dueño)
+# ---------------------------------------------------------------------
+
+@dueno_requerido
+def historias_view(request, dueno):
+    """Con una sola mascota va directo a su historia; con varias, se
+    elige una."""
+    mascotas = mascotas_para_historia(dueno)
+    if len(mascotas) == 1:
+        return redirect('clinica:historia', mascota_id=mascotas[0].pk)
+    return render(request, 'clinica/historias.html', {'mascotas': mascotas})
+
+
+@dueno_requerido
+def historia_view(request, dueno, mascota_id):
+    try:
+        historia = historia_de_mascota_para_dueno(dueno, mascota_id)
+    except MascotaNoEncontrada:
+        raise Http404('Mascota no encontrada.')
+    return render(request, 'clinica/historia.html', {
+        **historia,
+        'varias_mascotas': len(mascotas_para_historia(dueno)) > 1,
     })

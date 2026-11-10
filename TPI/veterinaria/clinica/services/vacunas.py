@@ -109,9 +109,10 @@ def obtener_vacuna_para_mascota(mascota, vacuna_id):
 
 
 def _horarios_de_vacunacion():
+    # Hasta el final del ultimo dia reservable, igual que el calendario.
     return turnos_disponibles(
         especialidad=Veterinario.Especialidad.VACUNACION,
-        hasta=timezone.now() + timedelta(days=DIAS_ADELANTE),
+        hasta=_rango_del_dia(_ultimo_dia_reservable())[1],
     )
 
 
@@ -129,6 +130,102 @@ def horarios_libres_vacunacion(limite=10):
         if len(horarios) >= limite:
             break
     return horarios
+
+
+def _rango_del_dia(fecha):
+    inicio = timezone.make_aware(datetime.combine(fecha, datetime.min.time()))
+    return inicio, inicio + timedelta(days=1)
+
+
+def _ultimo_dia_reservable():
+    return timezone.localdate() + timedelta(days=DIAS_ADELANTE)
+
+
+def calendario_de_horarios_vacunacion(mes_texto=None):
+    """Datos para el calendario mensual (de lunes a domingo) donde el
+    dueño elige el dia del turno de vacunacion. Un dia esta disponible
+    si tiene al menos un horario libre de un veterinario de VACUNACION
+    (segun turnos_disponibles). Se puede ir del mes actual al mes del
+    ultimo dia reservable (hoy + DIAS_ADELANTE)."""
+    hoy = timezone.localdate()
+    ultimo = _ultimo_dia_reservable()
+    anio, mes = interpretar_mes(mes_texto)
+    primer_dia = date(anio, mes, 1)
+    # Sin meses pasados ni mas alla de lo que se puede reservar.
+    primer_dia = min(
+        max(primer_dia, hoy.replace(day=1)), ultimo.replace(day=1),
+    )
+    anio, mes = primer_dia.year, primer_dia.month
+    siguiente = _primer_dia_del_mes_siguiente(anio, mes)
+
+    desde = timezone.make_aware(
+        datetime.combine(primer_dia, datetime.min.time())
+    )
+    hasta = min(
+        timezone.make_aware(datetime.combine(siguiente, datetime.min.time())),
+        _rango_del_dia(ultimo)[1],
+    )
+    dias_con_horarios = {
+        timezone.localtime(horario['fecha_hora']).date()
+        for horario in turnos_disponibles(
+            especialidad=Veterinario.Especialidad.VACUNACION,
+            desde=desde, hasta=hasta,
+        )
+    }
+
+    almanaque = calendar.Calendar(firstweekday=calendar.MONDAY)
+    semanas = [
+        [
+            {
+                'fecha': dia,
+                'del_mes': dia.month == mes,
+                'es_hoy': dia == hoy,
+                'disponible': dia.month == mes and dia in dias_con_horarios,
+            }
+            for dia in semana
+        ]
+        for semana in almanaque.monthdatescalendar(anio, mes)
+    ]
+    anterior = (primer_dia - timedelta(days=1)).replace(day=1)
+    return {
+        'primer_dia': primer_dia,
+        'semanas': semanas,
+        'dias_disponibles': sorted(dias_con_horarios),
+        'mes_anterior': (
+            anterior.strftime('%Y-%m') if anterior >= hoy.replace(day=1)
+            else None
+        ),
+        'mes_siguiente': (
+            siguiente.strftime('%Y-%m') if siguiente <= ultimo else None
+        ),
+    }
+
+
+def interpretar_dia(texto):
+    """'2026-10-15' -> date, o None si es invalido."""
+    try:
+        return date.fromisoformat(str(texto))
+    except ValueError:
+        return None
+
+
+def horarios_vacunacion_del_dia(fecha):
+    """Horarios libres de veterinarios de VACUNACION en ese dia, con el
+    veterinario de cada uno (si dos estan libres a la misma hora, van
+    los dos). Vacio si el dia ya paso, es invalido o esta fuera de lo
+    que se puede reservar."""
+    if fecha is None or not (
+        timezone.localdate() <= fecha <= _ultimo_dia_reservable()
+    ):
+        return []
+    desde, hasta = _rango_del_dia(fecha)
+    return [
+        horario for horario in turnos_disponibles(
+            especialidad=Veterinario.Especialidad.VACUNACION,
+            desde=desde, hasta=hasta,
+        )
+        if timezone.localtime(horario['fecha_hora']).date() == fecha
+    ]
 
 
 def obtener_horario_libre(veterinario_id, fecha_hora):

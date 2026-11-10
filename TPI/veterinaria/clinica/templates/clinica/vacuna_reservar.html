@@ -15,7 +15,7 @@
                 </h1>
                 <p class="text-secondary mb-4">
                     <span class="{% if paso == 1 %}fw-bold text-success{% endif %}">1 Vacuna</span>
-                    · <span class="{% if paso == 2 %}fw-bold text-success{% endif %}">2 Horario</span>
+                    · <span class="{% if paso == 2 %}fw-bold text-success{% endif %}">2 Día y horario</span>
                     · <span class="{% if paso == 3 %}fw-bold text-success{% endif %}">3 Confirmar</span>
                 </p>
 
@@ -50,35 +50,94 @@
                     {% endif %}
 
                 {% elif paso == 2 %}
+                    {% url 'clinica:vacuna_reservar' as url_reservar %}
                     <div class="card tarjeta-triage">
-                        <div class="card-body p-4">
+                        <div class="card-body p-3 p-md-4">
                             <p class="mb-3">
                                 Vacuna: <strong>{{ vacuna.nombre }}</strong>
-                                <a href="{% url 'clinica:vacuna_reservar' %}?mascota={{ mascota.pk }}"
+                                <a href="{{ url_reservar }}?mascota={{ mascota.pk }}"
                                    class="small ms-2">Cambiar</a>
                             </p>
-                            {% if horarios %}
-                                <h2 class="h6 text-uppercase text-secondary">
-                                    Próximos horarios libres
-                                </h2>
-                                <div class="d-grid gap-2">
-                                    {% for horario in horarios %}
-                                        <a href="{% url 'clinica:vacuna_reservar' %}?mascota={{ mascota.pk }}&vacuna={{ vacuna.pk }}&veterinario={{ horario.veterinario_id }}&fecha_hora={{ horario.fecha_hora|date:'c'|urlencode:'' }}"
-                                           class="btn btn-outline-brand text-start">
-                                            <i class="bi bi-clock me-1"></i>
-                                            {{ horario.fecha_hora|date:"l j \d\e F"|capfirst }}
-                                            · {{ horario.fecha_hora|date:"H:i" }} hs
-                                            <span class="small opacity-75">
-                                                · {{ horario.veterinario_nombre }}
+
+                            <h2 class="h6 text-uppercase text-secondary mb-3">Elegí el día</h2>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                {% if calendario.mes_anterior %}
+                                    <a href="{{ url_reservar }}?mascota={{ mascota.pk }}&vacuna={{ vacuna.pk }}&mes={{ calendario.mes_anterior }}"
+                                       class="btn btn-outline-brand btn-sm" aria-label="Mes anterior">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </a>
+                                {% else %}
+                                    <span class="btn btn-outline-secondary btn-sm disabled" aria-hidden="true">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </span>
+                                {% endif %}
+                                <span class="fw-semibold">{{ calendario.primer_dia|date:"F Y"|capfirst }}</span>
+                                {% if calendario.mes_siguiente %}
+                                    <a href="{{ url_reservar }}?mascota={{ mascota.pk }}&vacuna={{ vacuna.pk }}&mes={{ calendario.mes_siguiente }}"
+                                       class="btn btn-outline-brand btn-sm" aria-label="Mes siguiente">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                {% else %}
+                                    <span class="btn btn-outline-secondary btn-sm disabled" aria-hidden="true">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            {# Lunes a domingo; en el celular entra en el ancho de la pantalla. #}
+                            <div class="calendario-dias" role="grid" aria-label="Días con turnos de vacunación">
+                                {% for nombre in "LMMJVSD" %}
+                                    <div class="calendario-dias-titulo" aria-hidden="true">{{ nombre }}</div>
+                                {% endfor %}
+                                {% for semana in calendario.semanas %}
+                                    {% for d in semana %}
+                                        {% if not d.del_mes %}
+                                            <span class="calendario-dia otro-mes" aria-hidden="true"></span>
+                                        {% elif d.disponible %}
+                                            <a href="{{ url_reservar }}?mascota={{ mascota.pk }}&vacuna={{ vacuna.pk }}&dia={{ d.fecha|date:'Y-m-d' }}"
+                                               class="calendario-dia disponible{% if d.fecha == dia %} elegido{% endif %}{% if d.es_hoy %} hoy{% endif %}"
+                                               data-dia="{{ d.fecha|date:'Y-m-d' }}"
+                                               aria-label="{{ d.fecha|date:'l j \d\e F' }}">
+                                                {{ d.fecha.day }}
+                                            </a>
+                                        {% else %}
+                                            <span class="calendario-dia deshabilitado{% if d.es_hoy %} hoy{% endif %}"
+                                                  data-dia="{{ d.fecha|date:'Y-m-d' }}" aria-disabled="true">
+                                                {{ d.fecha.day }}
                                             </span>
-                                        </a>
+                                        {% endif %}
                                     {% endfor %}
-                                </div>
-                            {% else %}
-                                <p class="text-secondary mb-0">
-                                    No hay horarios de vacunación libres en
-                                    los próximos días. Probá más tarde.
+                                {% endfor %}
+                            </div>
+                            {% if not calendario.dias_disponibles %}
+                                <p class="text-secondary small mt-3 mb-0">
+                                    No hay horarios de vacunación libres este mes.
                                 </p>
+                            {% endif %}
+
+                            {% if dia %}
+                                <div class="mt-4" id="horarios-del-dia">
+                                    <h2 class="h6 text-uppercase text-secondary mb-3">
+                                        Horarios del {{ dia|date:"l j \d\e F" }}
+                                    </h2>
+                                    {% if horarios %}
+                                        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-2">
+                                            {% for horario in horarios %}
+                                                <div class="col">
+                                                    <a href="{{ url_reservar }}?mascota={{ mascota.pk }}&vacuna={{ vacuna.pk }}&veterinario={{ horario.veterinario_id }}&fecha_hora={{ horario.fecha_hora|date:'c'|urlencode:'' }}"
+                                                       class="btn btn-outline-brand w-100 h-100">
+                                                        <span class="fw-semibold">{{ horario.fecha_hora|date:"H:i" }}</span>
+                                                        <span class="d-block small">{{ horario.veterinario_nombre }}</span>
+                                                    </a>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="text-secondary mb-0">
+                                            No hay horarios libres ese día. Elegí otro día del calendario.
+                                        </p>
+                                    {% endif %}
+                                </div>
                             {% endif %}
                         </div>
                     </div>

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load mascotas_extras %}
+
+{% block titulo %}Historia clínica de {{ mascota.nombre }} - ClinicaVet24{% endblock %}
+{% block body_class %}fondo-verde-claro{% endblock %}
+
+{% block contenido %}
+<section class="py-5">
+    <div class="container">
+        {% if varias_mascotas %}
+            <a href="{% url 'clinica:historias' %}" class="small">
+                <i class="bi bi-arrow-left me-1"></i>Elegir otra mascota
+            </a>
+        {% endif %}
+
+        <div class="d-flex align-items-center gap-3 mt-2 mb-4">
+            <span class="avatar-mascota">
+                <i class="fa-solid {{ mascota.especie|icono_especie }}"></i>
+            </span>
+            <div>
+                <h1 class="h2 mb-0">Historia clínica de {{ mascota.nombre }}</h1>
+                <div class="dato-mascota">
+                    {{ mascota.get_especie_display }} · {{ mascota.raza }} · {{ mascota|edad }}
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-9">
+                {# Solo lectura: las entradas las cargan los veterinarios. #}
+                {% if entradas %}
+                    <div class="linea-tiempo">
+                        {% for entrada in entradas %}
+                            <div class="entrada card tarjeta-mascota mb-3">
+                                <div class="card-body p-4">
+                                    <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+                                        <div class="fw-bold">
+                                            <i class="bi bi-calendar-event me-1"></i>
+                                            {{ entrada.fecha|date:"d/m/Y H:i" }} hs
+                                        </div>
+                                        <div class="dato-mascota">
+                                            <i class="bi bi-person-badge me-1"></i>{{ entrada.veterinario.nombre }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="fw-semibold">Diagnóstico:</span>
+                                        {{ entrada.diagnostico|linebreaksbr }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="fw-semibold">Tratamiento:</span>
+                                        {{ entrada.tratamiento|linebreaksbr }}
+                                    </div>
+                                    {% if entrada.observaciones %}
+                                        <div>
+                                            <span class="fw-semibold">Observaciones:</span>
+                                            {{ entrada.observaciones|linebreaksbr }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="card tarjeta-triage">
+                        <div class="card-body p-4 text-center text-secondary">
+                            <i class="bi bi-journal-medical fs-1 d-block mb-2"></i>
+                            Todavía no hay atenciones registradas para {{ mascota.nombre }}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

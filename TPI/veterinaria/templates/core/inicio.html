@@ -153,11 +153,18 @@
                 </div>
             </div>
             <div class="col">
-                <div class="tarjeta-servicio p-4">
+                {# login_required manda a ingresar con next=/cuenta/historias/ si no hay sesion. #}
+                <div class="tarjeta-servicio p-4 position-relative">
                     <div class="icono-servicio mb-3">
                         <i class="bi bi-file-earmark-medical"></i>
                     </div>
-                    <h3 class="h5">Historia clínica</h3>
+                    <h3 class="h5">
+                        <a href="{% url 'clinica:historias' %}"
+                           id="tarjeta-historia"
+                           class="stretched-link text-reset text-decoration-none">
+                            Historia clínica
+                        </a>
+                    </h3>
                     <p class="text-secondary mb-0">
                         Registro completo de diagnósticos, tratamientos
                         y evolución.
