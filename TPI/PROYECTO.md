@@ -26,7 +26,7 @@ Definir los requerimientos del sistema.
 | RF03 | El sistema debe asignar un turno automáticamente según el nivel de urgencia y la disponibilidad del veterinario.                                       |
 | RF04 | El sistema debe permitir registrar el historial clínico de cada mascota por cada consulta (diagnóstico, tratamiento y observaciones).                  |
 | RF05 | El sistema debe permitir gestionar obra social del dueño.                                                                                              |
-| RF06 | El sistema debe registrar las vacunas aplicadas a cada mascota y calcular la fecha de la próxima dosis.                                                |
+| RF06 | El sistema debe registrar las vacunas aplicadas a cada mascota.                                                                                        |
 | RF07 | El sistema debe gestionar el pago de cada turno, calculando el monto final según la cobertura de obra social del dueño.                                |
 
 ### No Funcionales
